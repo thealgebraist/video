@@ -15,6 +15,8 @@ import argparse
 from diffusers import DiffusionPipeline, StableAudioPipeline, FluxPipeline
 from transformers import pipeline, BitsAndBytesConfig
 from PIL import Image
+import multiprocessing as mp
+from functools import partial
 
 # --- Configuration ---
 PROJECT_NAME = "gollum_developer"
@@ -467,13 +469,131 @@ def generate_plasma_image(prompt, out_path, width=1280, height=720):
     img.save(out_path)
 
 
+def _generate_images_worker(gpu_id, scenes_chunk, args):
+    """Worker function for multi-GPU image generation."""
+    device = f"cuda:{gpu_id}"
+    print(f"[GPU {gpu_id}] Starting image generation for {len(scenes_chunk)} scenes")
+
+    pipe = None
+    try:
+        if args.model == "black-forest-labs/FLUX.1-schnell":
+            pipe = FluxPipeline.from_pretrained(
+                "black-forest-labs/FLUX.1-schnell",
+                torch_dtype=torch.bfloat16,
+                device_map={"": gpu_id},
+            )
+        else:
+            pipe_kwargs = {
+                "torch_dtype": torch.bfloat16 if "cuda" in device else torch.float32
+            }
+            if args.quant != "none" and "cuda" in device:
+                pipe_kwargs["transformer_quantization_config"] = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                )
+
+            pipe = DiffusionPipeline.from_pretrained(
+                args.model,
+                local_files_only=True,
+                safety_checker=None,
+                requires_safety_checker=False,
+                **pipe_kwargs,
+            )
+            if args.scalenorm and hasattr(pipe, "transformer"):
+                pass  # apply_stability_improvements if needed
+            pipe.to(device)
+    except Exception as e:
+        print(f"[GPU {gpu_id}] Failed to load model: {e}")
+
+    for s_id, prompt, _ in scenes_chunk:
+        out_path = f"{ASSETS_DIR}/images/{s_id}.png"
+        if not os.path.exists(out_path):
+            if pipe:
+                print(f"[GPU {gpu_id}] Generating: {s_id}")
+                image = pipe(
+                    prompt,
+                    num_inference_steps=args.steps,
+                    guidance_scale=args.guidance,
+                    width=1280,
+                    height=720,
+                ).images[0]
+                image.save(out_path)
+
+    if pipe:
+        del pipe
+        torch.cuda.empty_cache()
+    print(f"[GPU {gpu_id}] Completed image generation")
+
+
+def _generate_sfx_worker(gpu_id, scenes_chunk, args):
+    """Worker function for multi-GPU SFX generation."""
+    device = f"cuda:{gpu_id}"
+    print(f"[GPU {gpu_id}] Starting SFX generation for {len(scenes_chunk)} scenes")
+
+    pipe = None
+    try:
+        pipe = StableAudioPipeline.from_pretrained(
+            "stabilityai/stable-audio-open-1.0",
+            torch_dtype=torch.float16,
+            local_files_only=True,
+        ).to(device)
+    except Exception as e:
+        print(f"[GPU {gpu_id}] Failed to load Stable Audio: {e}")
+
+    for s_id, _, sfx_prompt in scenes_chunk:
+        out_path = f"{ASSETS_DIR}/sfx/{s_id}.wav"
+        if not os.path.exists(out_path):
+            if pipe:
+                print(f"[GPU {gpu_id}] Generating SFX: {s_id}")
+                audio = pipe(
+                    sfx_prompt, num_inference_steps=100, audio_end_in_s=5.0
+                ).audios[0]
+                wavfile.write(
+                    out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16)
+                )
+
+    if pipe:
+        del pipe
+        torch.cuda.empty_cache()
+    print(f"[GPU {gpu_id}] Completed SFX generation")
+
+
 def generate_images(args):
     model_id = args.model
     steps = args.steps
+    os.makedirs(f"{ASSETS_DIR}/images", exist_ok=True)
+
+    # Multi-GPU parallel generation
+    if args.multigpu and args.multigpu > 1:
+        print(f"--- Generating images across {args.multigpu} GPUs ---")
+        # Split scenes across GPUs
+        chunk_size = len(SCENES) // args.multigpu
+        chunks = [SCENES[i : i + chunk_size] for i in range(0, len(SCENES), chunk_size)]
+
+        # Ensure we don't have more chunks than GPUs
+        if len(chunks) > args.multigpu:
+            chunks[-2] = chunks[-2] + chunks[-1]
+            chunks = chunks[:-1]
+
+        # Spawn processes for each GPU
+        processes = []
+        for gpu_id, chunk in enumerate(chunks):
+            p = mp.Process(target=_generate_images_worker, args=(gpu_id, chunk, args))
+            p.start()
+            processes.append(p)
+
+        # Wait for all processes to complete
+        for p in processes:
+            p.join()
+
+        print("--- Multi-GPU image generation complete ---")
+        return
+
+    # Single GPU/CPU generation (original logic)
     print(
         f"--- Generating {len(SCENES)} {model_id} Images ({steps} steps) on {DEVICE} ---"
     )
-
     pipe = None
     try:
         if model_id == "black-forest-labs/FLUX.1-schnell":
@@ -520,7 +640,6 @@ def generate_images(args):
         print(f"  [Error] Failed to load model {model_id}: {e}")
         print("  Falling back to procedural plasma generation.")
 
-    os.makedirs(f"{ASSETS_DIR}/images", exist_ok=True)
     for s_id, prompt, _ in SCENES:
         out_path = f"{ASSETS_DIR}/images/{s_id}.png"
         if not os.path.exists(out_path):
@@ -534,24 +653,65 @@ def generate_images(args):
                     height=720,
                 ).images[0]
                 image.save(out_path)
-            else:
-                generate_plasma_image(prompt, out_path)
 
     if pipe:
         del pipe
         torch.cuda.empty_cache()
 
 
-def generate_sfx(args):
-    print(f"--- Generating SFX with Stable Audio on {DEVICE} ---")
-    pipe = StableAudioPipeline.from_pretrained(
-        "stabilityai/stable-audio-open-1.0", torch_dtype=torch.float16
-    ).to(DEVICE)
-    remove_weight_norm(pipe)
-    if args.scalenorm:
-        apply_stability_improvements(pipe.transformer, use_scalenorm=True)
+def generate_mock_audio(prompt, out_path, duration_s=5.0):
+    """Generates procedural audio as a fallback."""
+    print(f"  [Fallback] Generating mock audio for: {prompt[:30]}...")
+    sr = 44100
+    t = np.linspace(0, duration_s, int(sr * duration_s))
+    freq = (sum(ord(c) for c in prompt) % 400) + 100
+    audio = 0.5 * np.sin(2 * np.pi * freq * t)
+    audio += 0.3 * np.random.normal(0, 1, len(t))
+    wavfile.write(out_path, sr, (audio * 32767).astype(np.int16))
 
+
+def generate_sfx(args):
     os.makedirs(f"{ASSETS_DIR}/sfx", exist_ok=True)
+
+    # Multi-GPU parallel generation
+    if args.multigpu and args.multigpu > 1:
+        print(f"--- Generating SFX across {args.multigpu} GPUs ---")
+        chunk_size = len(SCENES) // args.multigpu
+        chunks = [SCENES[i : i + chunk_size] for i in range(0, len(SCENES), chunk_size)]
+
+        if len(chunks) > args.multigpu:
+            chunks[-2] = chunks[-2] + chunks[-1]
+            chunks = chunks[:-1]
+
+        processes = []
+        for gpu_id, chunk in enumerate(chunks):
+            p = mp.Process(target=_generate_sfx_worker, args=(gpu_id, chunk, args))
+            p.start()
+            processes.append(p)
+
+        for p in processes:
+            p.join()
+
+        print("--- Multi-GPU SFX generation complete ---")
+        return
+
+    # Single GPU/CPU generation
+    print(f"--- Generating SFX with Stable Audio Open 1.0 on {DEVICE} ---")
+    pipe = None
+    try:
+        pipe = StableAudioPipeline.from_pretrained(
+            "stabilityai/stable-audio-open-1.0",
+            torch_dtype=torch.float16,
+            local_files_only=True,
+        ).to(DEVICE)
+        remove_weight_norm(pipe)
+        if args.scalenorm:
+            apply_stability_improvements(pipe.transformer, use_scalenorm=True)
+    except Exception as e:
+        print(f"  [Error] Failed to load Stable Audio: {e}")
+        print(f"  Skipping SFX generation - model not available locally")
+        return
+
     for s_id, _, sfx_prompt in SCENES:
         out_path = f"{ASSETS_DIR}/sfx/{s_id}.wav"
         if not os.path.exists(out_path):
@@ -562,8 +722,10 @@ def generate_sfx(args):
             wavfile.write(
                 out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16)
             )
-    del pipe
-    torch.cuda.empty_cache()
+
+    if pipe:
+        del pipe
+        torch.cuda.empty_cache()
 
 
 def generate_voiceover(args):
@@ -733,6 +895,12 @@ if __name__ == "__main__":
     )
     parser.add_argument("--offload", action="store_true")
     parser.add_argument("--scalenorm", action="store_true")
+    parser.add_argument(
+        "--multigpu",
+        type=int,
+        default=None,
+        help="Number of GPUs to use for parallel generation (e.g., --multigpu 4)",
+    )
     args = parser.parse_args()
 
     generate_images(args)
