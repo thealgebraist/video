@@ -400,4 +400,405 @@ It's empty.
 Turn around.
 Too late.""",
     },
+    # VARIANT 2: THE LAST BROADCAST
+    {
+        "name": "last_broadcast",
+        "title": "The Last Broadcast",
+        "scenes": [
+            # ACT 1: NORMAL BROADCAST (1-16)
+            (
+                "01_studio_entrance",
+                "vintage 1950s radio broadcast studio entrance, art deco signage 'ON AIR', warm nostalgic lighting",
+                "door opening footsteps echo",
+            ),
+            (
+                "02_equipment_room",
+                "tube radio equipment glowing amber, analog dials, patch cables, professional broadcast gear",
+                "electronic hum gentle buzzing",
+            ),
+            (
+                "03_host_prep",
+                "cheerful radio host preparing notes, adjusting headphones, checking microphone levels, professional routine",
+                "paper rustling microphone tap",
+            ),
+            (
+                "04_countdown",
+                "studio clock showing 30 seconds to broadcast, red ON AIR light warming up, anticipation",
+                "clock ticking countdown beep",
+            ),
+            (
+                "05_on_air",
+                "ON AIR light illuminates bright red, host smiling into microphone, beginning evening show",
+                "light click theme music",
+            ),
+            (
+                "06_intro_speech",
+                "host speaking enthusiastically into microphone, animated gestures, connecting with audience",
+                "voice speaking clearly warm tone",
+            ),
+            (
+                "07_reading_ads",
+                "reading sponsor advertisements from script, vintage product names, nostalgic commercial copy",
+                "paper turning voice continuing",
+            ),
+            (
+                "08_playing_music",
+                "cueing up vinyl record on turntable, gentle needle drop, music filling studio",
+                "vinyl static music playing",
+            ),
+            (
+                "09_listener_calls",
+                "switchboard lighting up with incoming calls, host taking requests, engaged conversation",
+                "phone ringing switchboard clicking",
+            ),
+            (
+                "10_weather_report",
+                "reading local weather forecast from teletype printout, routine segment, normal evening",
+                "teletype printing voice reading",
+            ),
+            (
+                "11_time_check",
+                "announcing current time 8:47 PM, everything on schedule, smooth broadcast flow",
+                "voice speaking clock ticking",
+            ),
+            (
+                "12_commercial_break",
+                "pushing slider to play pre-recorded commercials, leaning back in chair, brief rest",
+                "audio playing breath exhaling",
+            ),
+            (
+                "13_equipment_check",
+                "during break checking signal strength meters, all needles in green zone, everything nominal",
+                "meters clicking dials turning",
+            ),
+            (
+                "14_sip_coffee",
+                "taking sip of coffee from vintage mug, stretching, preparing for next segment",
+                "liquid sipping mug clinking",
+            ),
+            (
+                "15_back_live",
+                "commercial ending, host back on air, continuing evening program, professional demeanor",
+                "music fading voice returning",
+            ),
+            (
+                "16_normal_broadcast",
+                "studio shot showing everything normal, host comfortable, equipment functioning, routine night",
+                "ambient studio sounds calm",
+            ),
+            # ACT 2: FIRST GLITCHES (17-32)
+            (
+                "17_static_burst",
+                "sudden burst of static through speakers, brief interruption, host pausing mid-sentence",
+                "static burst sharp interruption",
+            ),
+            (
+                "18_signal_check",
+                "host checking equipment, tapping microphone, looking at meters, slight concern",
+                "tapping checking confused",
+            ),
+            (
+                "19_continue_on",
+                "shrugging off glitch, continuing broadcast, maintaining professional composure",
+                "clearing throat voice resuming",
+            ),
+            (
+                "20_lights_dim",
+                "studio lights dimming slightly then returning to normal, brief power fluctuation",
+                "lights dimming electrical surge",
+            ),
+            (
+                "21_phone_dead",
+                "switchboard going dark, all incoming calls cutting off simultaneously, no dial tone",
+                "phone lines dying silence",
+            ),
+            (
+                "22_try_calling",
+                "attempting to call station engineer, phone completely dead, no signal",
+                "phone clicking dead tone",
+            ),
+            (
+                "23_music_distorts",
+                "vinyl record playing but audio becoming warped and slowed, pitch dropping unnaturally",
+                "music warping slowing distortion",
+            ),
+            (
+                "24_stop_record",
+                "lifting needle off record, but warped music continues playing from speakers somehow",
+                "needle lift music continues",
+            ),
+            (
+                "25_speakers_off",
+                "turning off powered speakers, but audio still emanating from somewhere in studio",
+                "switch off audio persisting",
+            ),
+            (
+                "26_looking_around",
+                "host standing, looking around studio confused, trying to locate audio source",
+                "footsteps searching confusion",
+            ),
+            (
+                "27_clock_wrong",
+                "studio clock now showing impossible time, hands moving backwards, time distortion",
+                "clock clicking reversed motion",
+            ),
+            (
+                "28_teletype_gibberish",
+                "teletype machine activating on its own, printing incomprehensible symbols, not text",
+                "teletype chattering nonsense printing",
+            ),
+            (
+                "29_no_door",
+                "walking to exit door, but door handle won't turn, appears locked from outside",
+                "handle rattling locked resistance",
+            ),
+            (
+                "30_window_check",
+                "checking observation window to control room, but room beyond is completely dark, empty",
+                "tapping glass darkness beyond",
+            ),
+            (
+                "31_microphone_feedback",
+                "microphone screeching with feedback despite not being too close to speakers, harsh sound",
+                "feedback screeching piercing",
+            ),
+            (
+                "32_signal_meters",
+                "all signal meters pinned at maximum red, indicating impossible signal strength, equipment malfunction",
+                "meters slamming alarms beeping",
+            ),
+            # ACT 3: BROADCAST NEVER ENDED (33-48)
+            (
+                "33_tape_loop",
+                "discovering reel-to-reel tape playing, but it's recording of own voice from earlier tonight",
+                "tape playing voice echo",
+            ),
+            (
+                "34_loop_perfect",
+                "voice on tape sync perfectly with current speech, predicting every word spoken",
+                "synchronized voices perfect timing",
+            ),
+            (
+                "35_cant_stop",
+                "trying to stop speaking but voice continues independently, mouth moving on its own",
+                "voice continuing involuntary",
+            ),
+            (
+                "36_script_changes",
+                "looking down at script, words rearranging themselves on page, text flowing like liquid",
+                "paper rustling words shifting",
+            ),
+            (
+                "37_calendar_old",
+                "studio calendar showing date from 1952, decades old, but looks freshly printed",
+                "page flip impossible date",
+            ),
+            (
+                "38_dust_appearing",
+                "thick dust accumulating on equipment in real-time, decades of deterioration accelerating",
+                "dust falling settling decay",
+            ),
+            (
+                "39_paint_peeling",
+                "studio walls paint peeling and cracking rapidly, revealing older paint beneath, decay spreading",
+                "paint crackling walls crumbling",
+            ),
+            (
+                "40_equipment_aging",
+                "tube equipment flickering and failing, vacuum tubes burning out, wiring fraying visibly",
+                "tubes popping wiring sparking",
+            ),
+            (
+                "41_photos_changing",
+                "framed photos on wall showing host growing older in pictures, aging before eyes",
+                "subtle creaking reality shifting",
+            ),
+            (
+                "42_mirror_reflection",
+                "catching reflection in glass window, but reflection shows host as elderly, decades older",
+                "breath catching realization",
+            ),
+            (
+                "43_hands_aging",
+                "looking down at own hands, veins prominent, age spots appearing, skin weathering rapidly",
+                "gasp horror breathing",
+            ),
+            (
+                "44_voice_older",
+                "voice coming from mouth sounds elderly and raspy, no longer youthful radio voice",
+                "old voice crackling rasp",
+            ),
+            (
+                "45_memory_gaps",
+                "struggling to remember, how long broadcasting, days, years, decades, time meaningless",
+                "confused muttering memory strain",
+            ),
+            (
+                "46_studio_decay",
+                "studio now clearly abandoned, equipment broken, walls crumbling, but broadcast continues",
+                "decay settling destruction",
+            ),
+            (
+                "47_skeleton_crew",
+                "seeing reflection of technical crew in glass, but they're skeletal remains at their posts",
+                "bones rattling presence",
+            ),
+            (
+                "48_never_left",
+                "horror realization never left studio, been broadcasting continuously for 70 years",
+                "panicked breathing revelation",
+            ),
+            # ACT 4: THE TRANSMISSION (49-64)
+            (
+                "49_audience_none",
+                "understanding there's been no audience for decades, broadcasting to empty air, meaningless transmission",
+                "silence empty airwaves",
+            ),
+            (
+                "50_cant_stop_broadcast",
+                "physically unable to stop talking, voice perpetually streaming, eternal broadcast curse",
+                "voice endless compulsive",
+            ),
+            (
+                "51_time_loop",
+                "clock showing same time as when broadcast started, trapped in temporal loop, repeating forever",
+                "clock ticking stuck time",
+            ),
+            (
+                "52_script_endless",
+                "script pages infinite, more pages appearing as reading, never-ending copy, eternal content",
+                "pages multiplying paper rustling",
+            ),
+            (
+                "53_other_hosts",
+                "seeing shadowy figures of other hosts from other eras, all trapped broadcasting, all cursed",
+                "multiple voices overlapping whispers",
+            ),
+            (
+                "54_their_studios",
+                "glimpsing other studio timelines overlapping, different decades all broadcasting simultaneously",
+                "temporal overlap echo",
+            ),
+            (
+                "55_same_curse",
+                "all hosts repeating same shows eternally, same scripts, same music, same loop forever",
+                "voices synchronizing unity",
+            ),
+            (
+                "56_trying_scream",
+                "attempting to scream for help but voice only produces smooth radio patter, words controlled",
+                "smooth voice despite panic",
+            ),
+            (
+                "57_commercial_eternal",
+                "commercial break starting but it's sponsor from 1952, same ad repeating infinitely",
+                "old commercial looping",
+            ),
+            (
+                "58_products_gone",
+                "products advertised don't exist anymore, companies bankrupt 50 years ago, anachronistic",
+                "dated copy obsolete references",
+            ),
+            (
+                "59_listeners_dead",
+                "callers on switchboard all deceased decades ago, speaking from beyond, dead listeners",
+                "ghostly voices static",
+            ),
+            (
+                "60_answering_dead",
+                "host answering calls from the dead, taking requests from listeners long buried, macabre interaction",
+                "dead voices hollow echoing",
+            ),
+            (
+                "61_music_funeral",
+                "playing music requests, but all songs are funeral dirges, mourning music, death march",
+                "funeral music slow mournful",
+            ),
+            (
+                "62_final_sign_off",
+                "attempting to sign off for the night, but words impossible, broadcast must continue forever",
+                "voice struggling failing",
+            ),
+            (
+                "63_eternal_broadcast",
+                "accepting fate, will broadcast forever in abandoned studio, timeless loop, eternal prison",
+                "resignation acceptance breathing",
+            ),
+            (
+                "64_on_air_forever",
+                "ON AIR light still glowing bright red, will never turn off, transmission continuing forever into darkness",
+                "light humming eternal signal",
+            ),
+        ],
+        "voiceover": """Good evening listeners.
+This is your host.
+Broadcasting live.
+From the studio.
+On this beautiful night.
+Time for music.
+Time for news.
+Your company.
+Your comfort.
+Everything is fine.
+The broadcast continues.
+As it always has.
+Did you hear that?
+Just static.
+Technical difficulty.
+We'll continue.
+The phones are ringing.
+But no one answers.
+The music plays.
+But I didn't cue it.
+The clock is wrong.
+Time moves strangely.
+I try to leave.
+The door won't open.
+The control room.
+It's empty.
+How long have I been here?
+Minutes? Hours?
+The script changes.
+I read words.
+I never wrote.
+My calendar.
+It's from 1952.
+But that's impossible.
+The dust.
+Gathering so fast.
+The walls.
+They're crumbling.
+My hands.
+They look so old.
+My voice.
+It sounds ancient.
+How long.
+Have I been broadcasting?
+Days?
+Years?
+Decades?
+I remember now.
+I never left.
+The show never ended.
+The audience.
+They're all gone.
+But I keep talking.
+I can't stop.
+The clock shows.
+The same time.
+Other hosts.
+All trapped here.
+Broadcasting forever.
+We can't stop.
+Commercial break.
+It never ends.
+The listeners.
+They're all dead.
+But they still call.
+I must continue.
+The broadcast.
+Will never end.
+ON AIR.
+Forever.""",
+    },
 ]
