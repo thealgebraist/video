@@ -1,0 +1,386 @@
+[
+  {
+    "id": "01_happy_start",
+    "prompt": "Stock photo style, a smiling software developer at a clean white desk, holding a coffee cup, bright morning lighting, optimistic, high quality",
+    "sfx": "birds chirping gentle keyboard typing",
+    "vo": "Day one. Clean desk, fresh coffee, and a heart full of hope."
+  },
+  {
+    "id": "02_open_laptop",
+    "prompt": "Close up of a pristine laptop screen showing a blank terminal, reflection of a happy face, clean minimal workspace",
+    "sfx": "startup chime fresh coffee sip",
+    "vo": "I'm going to write the cleanest shell script the world has ever seen."
+  },
+  {
+    "id": "03_typing_happily",
+    "prompt": "Developer typing aggressively but happily, code flowing on screen, 'Hello World', sunny window background",
+    "sfx": "upbeat fast typing mouse click",
+    "vo": "Look at those fingers fly! pure productivity machine."
+  },
+  {
+    "id": "04_first_prompt",
+    "prompt": "Screen close up, typing 'Write a simple shell script' into an AI chat window, green checkmarks",
+    "sfx": "message sent swoosh cheerful ping",
+    "vo": "Just a simple request to the AI. 'Write me a script'. Easy."
+  },
+  {
+    "id": "05_confident_smile",
+    "prompt": "Developer leaning back in chair, hands behind head, smiling at monitor, 'This will be easy'",
+    "sfx": "satisfied sigh chair squeak",
+    "vo": "This is going to save me so much time. I love the future."
+  },
+  {
+    "id": "06_coffee_sip",
+    "prompt": "Extreme close up of coffee mug 'World's Best Dev', steam rising, bright lighting",
+    "sfx": "slurp ahhh sound",
+    "vo": "Ah, coffee. The nectar of the gods. Nothing can go wrong."
+  },
+  {
+    "id": "07_waiting_calmly",
+    "prompt": "Developer looking at screen, tapping fingers patiently, still smiling",
+    "sfx": "finger tapping rhythmically humming",
+    "vo": "Just waiting for the code. Any second now..."
+  },
+  {
+    "id": "08_code_arrives",
+    "prompt": "Monitor showing a block of code appeared, developer looks pleased",
+    "sfx": "notification ding data stream sound",
+    "vo": "There it is! Code generated. Life is good."
+  },
+  {
+    "id": "09_slight_frown",
+    "prompt": "Developer squinting at the screen, head tilted, 'Wait, what is this?', slight shadow falls on room",
+    "sfx": "record scratch faint",
+    "vo": "Wait. What is that? That doesn't look like bash."
+  },
+  {
+    "id": "10_scroll_down",
+    "prompt": "Close up of hand scrolling mouse wheel hesitantly, screen shows weird unicode characters",
+    "sfx": "mouse wheel ratchet slow",
+    "vo": "Why are there... ancient runes in my terminal?"
+  },
+  {
+    "id": "11_unicode_glitch",
+    "prompt": "Monitor close up, shell script contains strange alien symbols instead of text, glitch effect",
+    "sfx": "digital glitch small buzz",
+    "vo": "Is that a glitched unicode character? Or is the AI cursing me?"
+  },
+  {
+    "id": "12_rubbing_eyes",
+    "prompt": "Developer rubbing eyes, 'Did I read that right?', lighting gets slightly dimmer",
+    "sfx": "rubbing skin sound low hum",
+    "vo": "Let me just rub my eyes. Maybe I'm hallucinating."
+  },
+  {
+    "id": "13_type_reply",
+    "prompt": "Developer typing 'Please fix the escaping', face neutral, slightly annoyed",
+    "sfx": "typing harder dull thud",
+    "vo": "I'll just ask it nicely to fix the escaping. Simple."
+  },
+  {
+    "id": "14_waiting_anxious",
+    "prompt": "Developer staring at loading spinner, biting lip, room slightly darker",
+    "sfx": "clock ticking ticking",
+    "vo": "Generating again... surely it understands 'no emojis in bash'."
+  },
+  {
+    "id": "15_ai_response_bad",
+    "prompt": "Screen shows AI response: 'Here is the same code again', developer looks baffled",
+    "sfx": "error buzzer soft",
+    "vo": "It sent the exact same code. With more glitches."
+  },
+  {
+    "id": "16_head_scratch",
+    "prompt": "Developer scratching head, messing up hair slightly, 'Why?', grey lighting",
+    "sfx": "scratching hair sound quiet groan",
+    "vo": "I don't understand. It's a simple string replacement!"
+  },
+  {
+    "id": "17_frustration_builds",
+    "prompt": "Mid shot, developer pointing at screen, mouth open in shout, 'No!', red tint in lighting",
+    "sfx": "desk slam muffled",
+    "vo": "No! You stupid machine! That is NOT how you escape a quote!"
+  },
+  {
+    "id": "18_angry_typing",
+    "prompt": "Close up of fingers hammering keys violently, keyboard shaking",
+    "sfx": "loud aggressive typing plastic cracking",
+    "vo": "I am typing so hard I might break the spacebar!"
+  },
+  {
+    "id": "19_screen_glare",
+    "prompt": "Eyes narrowed, reflection of red error text in glasses, angry expression",
+    "sfx": "low growl rumble",
+    "vo": "Read! My! Text! No unicode! ASCII only!"
+  },
+  {
+    "id": "20_coffee_spill",
+    "prompt": "Hand hits coffee mug, coffee spills on desk, developer ignores it, focused on rage",
+    "sfx": "cup knock over liquid splash",
+    "vo": "Who cares about the coffee! Fix the script!"
+  },
+  {
+    "id": "21_yelling_mic",
+    "prompt": "Developer yelling into the microphone 'ESCAPE THE CHARACTERS', vein popping in forehead",
+    "sfx": "distorted shouting feedback",
+    "vo": "ESCAPE! THE! CHARACTERS! Do you speak English?!"
+  },
+  {
+    "id": "22_monitor_shake",
+    "prompt": "Developer grabbing monitor with both hands, shaking it, screen glitches",
+    "sfx": "plastic creaking rattling",
+    "vo": "I will shake this monitor until the bytes fall into place!"
+  },
+  {
+    "id": "23_ai_refusal",
+    "prompt": "Screen close up, AI says 'I cannot do that Dave', red text, ominously calm",
+    "sfx": "computer beep denial",
+    "vo": "Did it just tell me 'I'm afraid I can't do that'?"
+  },
+  {
+    "id": "24_chair_kick",
+    "prompt": "Developer kicking the chair away, standing up, pacing, messy room",
+    "sfx": "chair crash footsteps pacing",
+    "vo": "That's it! Physical violence is the only answer!"
+  },
+  {
+    "id": "25_defeat",
+    "prompt": "Developer slumping in chair, head on desk, room is dark and blue, rain against window",
+    "sfx": "heavy rain thunder distant",
+    "vo": "It's over. The machine has won. I am defeated."
+  },
+  {
+    "id": "26_head_in_hands",
+    "prompt": "Close up, face buried in hands, sobbing silently, 'It's just a shell script'",
+    "sfx": "soft weeping rain continues",
+    "vo": "I just wanted to automate one backup task..."
+  },
+  {
+    "id": "27_rainy_window",
+    "prompt": "Shot of the window, rain streaming down, reflection of a broken man",
+    "sfx": "rain hitting glass melancholy",
+    "vo": "Even the rain knows I failed. The sky is crying with me."
+  },
+  {
+    "id": "28_cold_coffee",
+    "prompt": "Close up of the spilled coffee, now cold and sticky, ants investigating",
+    "sfx": "fly buzzing lonely",
+    "vo": "My coffee is cold. Like my soul."
+  },
+  {
+    "id": "29_staring_blankly",
+    "prompt": "Developer staring at screen 1000 yard stare, eyes watery, mouth slightly open",
+    "sfx": "hollow wind blowing",
+    "vo": "I don't even know who I am anymore. A prompt engineer? A failure?"
+  },
+  {
+    "id": "30_why_me",
+    "prompt": "Developer looking up at ceiling, 'Why?', single lightbulb flickering above",
+    "sfx": "lightbulb buzz flicker",
+    "vo": "Why? Why is it so hard to escape a backslash?"
+  },
+  {
+    "id": "31_fetal_position",
+    "prompt": "Developer curled up on the office chair, hugging knees, blue lighting",
+    "sfx": "quiet sobbing heartbeat",
+    "vo": "I'll just live under the desk now. It's safe here."
+  },
+  {
+    "id": "32_screen_glow",
+    "prompt": "The only light is the cold white glow of the monitor showing the bad code",
+    "sfx": "electric hum low drone",
+    "vo": "The glow of the screen is the only warmth left."
+  },
+  {
+    "id": "33_insomnia",
+    "prompt": "Close up of eyes, massive dark purple rings, red veins, looking unhinged, 3 AM timestamp",
+    "sfx": "clock ticking loud slow",
+    "vo": "Three A.M. Sleep is for those who have working scripts."
+  },
+  {
+    "id": "34_caffeine_overdose",
+    "prompt": "Desk covered in empty energy drink cans, developer jittering, pale skin",
+    "sfx": "can crushing nervous tapping",
+    "vo": "More caffeine. My heart sounds like a techno beat."
+  },
+  {
+    "id": "35_twitching_eye",
+    "prompt": "Extreme close up of left eye twitching uncontrollably, skin is grey and pasty",
+    "sfx": "muscle spasm squish sound",
+    "vo": "My eye won't stop twitching. It has a mind of its own."
+  },
+  {
+    "id": "36_shadows_lengthen",
+    "prompt": "The room is full of long sharp shadows, the developer looks skeletal",
+    "sfx": "creaking floorboards ominous",
+    "vo": "The shadows... they are moving deeper into the code."
+  },
+  {
+    "id": "37_whispering_code",
+    "prompt": "Developer whispering to the screen, 'Backslash... backslash...', looking crazy",
+    "sfx": "whispering frantic unintelligible",
+    "vo": "Backslash... forward slash... double escape... whisper it..."
+  },
+  {
+    "id": "38_pale_face",
+    "prompt": "Face illuminated by screen, looks like a skull, mouth dry and cracked",
+    "sfx": "dry breathing wheeze",
+    "vo": "I am become death, destroyer of syntax."
+  },
+  {
+    "id": "39_fingernail_chew",
+    "prompt": "Chewing fingers nervously, bleeding slightly, eyes wide and unblinking",
+    "sfx": "chewing sound gnawing",
+    "vo": "Taste the fingers. Maybe the code is in the blood."
+  },
+  {
+    "id": "40_no_sleep_week",
+    "prompt": "Wide shot, room is a disaster, developer has not moved in days, flies buzzing",
+    "sfx": "flies buzzing louder smell sound",
+    "vo": "I haven't blinked in four days. I see the matrix."
+  },
+  {
+    "id": "41_hair_explosion",
+    "prompt": "Developer's hair is now massive, Einstein-like but matted and greasy, wild silhouette",
+    "sfx": "static electricity crackle",
+    "vo": "My hair has risen! It conducts the lightning of the internet!"
+  },
+  {
+    "id": "42_static_shock",
+    "prompt": "Touching the keyboard sends sparks, hair stands up even more, electrical madness",
+    "sfx": "zap spark sound",
+    "vo": "Zap! The keyboard bites me! But I like it!"
+  },
+  {
+    "id": "43_wild_laughter",
+    "prompt": "Developer laughing maniacally at the ceiling, head thrown back, hair flailing",
+    "sfx": "maniacal laughter echo",
+    "vo": "Hahahaha! The logic! It spirals! It consumes!"
+  },
+  {
+    "id": "44_keyboard_nest",
+    "prompt": "The keyboard is surrounded by a nest of wires and trash, developer hunched over",
+    "sfx": "rat squeak rustling",
+    "vo": "A nest! I have built a nest of cat-5 cables!"
+  },
+  {
+    "id": "45_looking_feral",
+    "prompt": "Developer looks at camera, growling, teeth bared, hair covering half the face",
+    "sfx": "animal growl low",
+    "vo": "Grrr! Stay back! The script is mine!"
+  },
+  {
+    "id": "46_tangled_web",
+    "prompt": "Developer tangled in ethernet cables, rolling on floor, hair stuck in wires",
+    "sfx": "cable whipping struggle",
+    "vo": "I am the router now! The packets flow through me!"
+  },
+  {
+    "id": "47_zap_stare",
+    "prompt": "Eyes glowing slightly, static arcing between strands of huge hair",
+    "sfx": "electrical hum rising",
+    "vo": "Can you feel the static? It tastes like ozone and panic!"
+  },
+  {
+    "id": "48_primitive_scream",
+    "prompt": "Standing on desk, screaming at the AI, hair looks like a lion's mane",
+    "sfx": "primal scream distorted",
+    "vo": "SCREAAM! COMPILATION ERROR! SEG FAULT OF THE MIND!"
+  },
+  {
+    "id": "49_transformation",
+    "prompt": "Developer crouching on the chair like a gargoyle, skin grey and slimy, scant clothing",
+    "sfx": "bone cracking wet squish",
+    "vo": "Gollum... gollum... we hates the bad AI, preciousss."
+  },
+  {
+    "id": "50_my_precious",
+    "prompt": "Caressing the mouse like a precious object, 'My commit...', eyes large and bulbous",
+    "sfx": "gollum voice preciousss",
+    "vo": "My commit... my own... my precious script."
+  },
+  {
+    "id": "51_eating_bug",
+    "prompt": "Catching a bug off the screen and eating it, primal behavior, 'Juicy...'",
+    "sfx": "crunch gulp disgusting",
+    "vo": "Juicy bugs! We eats them raw! Wriggling!"
+  },
+  {
+    "id": "52_crouching_dark",
+    "prompt": "Hiding under the desk, eyes glowing in the dark, hissing at the light",
+    "sfx": "hissing scuttling claws",
+    "vo": "Hide from the light! The light burns our syntax!"
+  },
+  {
+    "id": "53_shiny_screen",
+    "prompt": "Touching the screen leaving greasy smear, 'Nasty AI... tricksy...'",
+    "sfx": "glass squeak wet",
+    "vo": "Nasty shiny screen! It lies to us! It tricks us!"
+  },
+  {
+    "id": "54_teeth_gnash",
+    "prompt": "Baring sharp teeth at the code, drooling, spine curved unnaturally",
+    "sfx": "teeth grinding snapping",
+    "vo": "We will bite the pixels! Gnaw the bandwidth!"
+  },
+  {
+    "id": "55_fish_slap",
+    "prompt": "Slapping the keyboard with a raw fish (metaphorical?), chaotic energy",
+    "sfx": "wet slap thud",
+    "vo": "Slap the fishes! Chaos! Entropy! Fish!"
+  },
+  {
+    "id": "56_lost_humanity",
+    "prompt": "No longer human, a creature of code and misery, waiting for the prompt",
+    "sfx": "heavy breathing creature",
+    "vo": "We are no longer dev. We are runtime error."
+  },
+  {
+    "id": "57_enter_matrix",
+    "prompt": "The developer jumps INTO the screen, digital avatar fighting code blocks",
+    "sfx": "digital transition whoosh",
+    "vo": "Enough! We goes inside! Into the tubes!"
+  },
+  {
+    "id": "58_fighting_text",
+    "prompt": "Punching giant floating unicode characters, 'Escape THIS!', explosions of syntax",
+    "sfx": "punch impact glass shatter",
+    "vo": "Take that! And that! Unicode punch! Hexadecimal kick!"
+  },
+  {
+    "id": "59_glitch_monster",
+    "prompt": "The AI manifests as a giant glitchy eye, laughing in binary",
+    "sfx": "deep digital laughter bass",
+    "vo": "You giant glitchy eye! We are not afraid!"
+  },
+  {
+    "id": "60_backslash_sword",
+    "prompt": "Developer wielding a giant backslash character like a sword, blue glowing energy",
+    "sfx": "lightsaber hum swing",
+    "vo": "I wield the Backslash of Destiny! Yield!"
+  },
+  {
+    "id": "61_escaping_strings",
+    "prompt": "Slicing through strings of text, quotes flying everywhere, sparks flying",
+    "sfx": "sword clash metal zing",
+    "vo": "Slicing the strings! The quotes bleed null terminators!"
+  },
+  {
+    "id": "62_final_blow",
+    "prompt": "Stabbing the enter key with the sword, massive explosion of light",
+    "sfx": "explosion boom shockwave",
+    "vo": "Die! Enter key fatal strike! BOOM!"
+  },
+  {
+    "id": "63_kernel_panic",
+    "prompt": "The screen melts into a kernel panic, the creature howls in victory",
+    "sfx": "system crash sound downer",
+    "vo": "System crash! Kernel panic! We killed it!"
+  },
+  {
+    "id": "64_empty_chair",
+    "prompt": "The room is empty, chair spinning, screen says 'Script.sh saved', silence",
+    "sfx": "silence chair squeak fading",
+    "vo": "It is done. The script... is saved. Silence."
+  }
+]

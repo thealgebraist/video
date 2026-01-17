@@ -1,0 +1,27 @@
+[
+    {
+        "id": "01_foggy_forest",
+        "prompt": "A dense, foggy forest at night, twisted trees, moonlight barely visible, horror atmosphere, 8k, highly detailed",
+        "sfx": "eerie wind howling distant owl screech"
+    },
+    {
+        "id": "02_abandoned_house",
+        "prompt": "An old, abandoned house with broken windows, overgrown weeds, and a creaking door, horror, cinematic lighting",
+        "sfx": "creaking wood door slamming ghostly whispers"
+    },
+    {
+        "id": "03_shadowy_figure",
+        "prompt": "A shadowy figure standing at the end of a long hallway, backlit, indistinct face, horror, suspenseful mood",
+        "sfx": "footsteps echoing heartbeat rising suspense"
+    },
+    {
+        "id": "04_bloody_mirror",
+        "prompt": "A cracked mirror with bloody handprints, dim candlelight, horror, unsettling reflection",
+        "sfx": "glass cracking blood dripping faint breathing"
+    },
+    {
+        "id": "05_final_scream",
+        "prompt": "A terrified person screaming in the rain, lightning flash, horror, dramatic close-up",
+        "sfx": "thunder crash rain pouring terrified scream"
+    }
+]

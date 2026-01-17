@@ -1,0 +1,7 @@
+*.png
+.DS_Store
+Cargo.lock
+target/
+rust_asset_generator/assets_gollum/gollum_gguf_out.mp4
+rust_asset_generator/assets_gollum/gollum_rust_out.mp4
+rust_asset_generator/assets_horror/horror_rust_out.mp4
