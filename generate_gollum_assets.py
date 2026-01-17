@@ -22,9 +22,9 @@ ASSETS_DIR = f"assets_{PROJECT_NAME}"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 DTYPE = torch.bfloat16 if DEVICE == "cuda" else torch.float32
 
-DEFAULT_MODEL = "nota-ai/bk-sdm-tiny"
-DEFAULT_STEPS = 4
-DEFAULT_GUIDANCE = 0.0
+DEFAULT_MODEL = "black-forest-labs/FLUX.1-schnell"
+DEFAULT_STEPS = 64  # FLUX.1-schnell works well with 64 steps
+DEFAULT_GUIDANCE = 0.0  # FLUX.1-schnell doesn't use guidance
 DEFAULT_QUANT = "4bit" if DEVICE == "cuda" else "none"
 
 # --- SCENES (64 Total) ---
