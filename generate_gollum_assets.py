@@ -768,24 +768,26 @@ def generate_music(args):
     sections = [
         (
             "happy_start",
-            "upbeat lo-fi coding beats, happy, optimistic, coffee shop vibes",
-            60.0,
+            "cheerful upbeat corporate music, motivational piano, optimistic synth melody",
+            30.0,
         ),
         (
             "stress_build",
             "tense dissonant synth, ticking clock, rising anxiety, dark ambient",
-            120.0,
+            45.0,
         ),
         (
             "chaos_gollum",
             "industrial metal glitch, chaotic drums, aggressive distortion, nightmare soundscape",
-            120.0,
+            45.0,
         ),
     ]
 
     full_mix = []
+    MAX_DURATION = 47.0  # Stable Audio max length
     for name, prompt, dur in sections:
-        print(f"  Generating music section: {name}")
+        dur = min(dur, MAX_DURATION)  # Clamp to max
+        print(f"  Generating music section: {name} ({dur}s)")
         audio = pipe(prompt, num_inference_steps=100, audio_end_in_s=dur).audios[0]
         full_mix.append(audio.T.cpu().numpy())
 
