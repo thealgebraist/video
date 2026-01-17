@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use candle_core::{Device, Tensor, DType};
+use candle_core::{Device, Tensor};
 use std::path::Path;
 
 pub struct GgufTestPipeline {
@@ -56,16 +56,18 @@ impl GgufTestPipeline {
 pub fn save_image(tensor: &Tensor, path: &Path) -> Result<()> {
     let tensor = tensor.squeeze(0)?.to_device(&Device::Cpu)?;
     let (c, h, w) = tensor.dims3()?;
+    if c != 3 {
+        anyhow::bail!("Expected 3 channels, got {}", c);
+    }
     
-    // Manual conversion to avoid complex dependency issues with to_vec3
-    let data = tensor.flatten_all()?.to_vec1::<f32>()?;
+    let data = tensor.to_vec3::<f32>()?;
     let mut imgbuf = image::ImageBuffer::new(w as u32, h as u32);
     
-    for y in 0..h {
-        for x in 0..w {
-            let r = (data[(0 * h * w) + (y * w) + x].clamp(0.0, 1.0) * 255.0) as u8;
-            let g = (data[(1 * h * w) + (y * w) + x].clamp(0.0, 1.0) * 255.0) as u8;
-            let b = (data[(2 * h * w) + (y * w) + x].clamp(0.0, 1.0) * 255.0) as u8;
+    for (y, row) in data[0].iter().enumerate() {
+        for (x, _) in row.iter().enumerate() {
+            let r = (data[0][y][x].clamp(0.0, 1.0) * 255.0) as u8;
+            let g = (data[1][y][x].clamp(0.0, 1.0) * 255.0) as u8;
+            let b = (data[2][y][x].clamp(0.0, 1.0) * 255.0) as u8;
             imgbuf.put_pixel(x as u32, y as u32, image::Rgb([r, g, b]));
         }
     }

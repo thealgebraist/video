@@ -16,7 +16,7 @@ pub fn assemble_video(assets_dir: &Path, output_file: &Path) -> Result<()> {
     // Let's assume the assets are named nicely (01_..., 02_...).
     
     let images_dir = assets_dir.join("images");
-    let voice_dir = assets_dir.join("voice");
+    let _voice_dir = assets_dir.join("voice");
     
     if !images_dir.exists() {
         println!("No images directory found, skipping assembly.");

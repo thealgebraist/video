@@ -2,21 +2,21 @@ use anyhow::Result;
 use clap::Parser;
 use rust_asset_generator::{
     data::{load_scenes, ProjectConfig},
-    inference::{GgufFluxPipeline, save_image},
+    inference::{GgufTestPipeline, save_image},
     ffmpeg::assemble_video,
 };
 use std::path::PathBuf;
-use candle_core::{Device, Tensor};
+use candle_core::Device;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Path to the GGUF model file (.gguf)
-    #[arg(short, long, default_value = "flux1-schnell-Q4_k.gguf")]
+    #[arg(short, long, default_value = "model_q4_0.gguf")]
     model: PathBuf,
 
-    /// Number of inference steps
-    #[arg(short, long, default_value_t = 4)]
+    /// Number of inference steps (unused in test)
+    #[arg(short, long, default_value_t = 1)]
     steps: i64,
 
     /// Device (cpu, cuda)
@@ -29,7 +29,7 @@ fn main() -> Result<()> {
     
     // 1. Setup Config
     let config = ProjectConfig::new("gollum", args.model.clone());
-    println!("--- Gollum Asset Generator (Rust + GGUF) ---");
+    println!("--- Gollum Asset Generator (Rust + GGUF Test) ---");
     println!("Assets Dir: {:?}", config.assets_dir);
     
     // 2. Load Scenes
@@ -37,15 +37,9 @@ fn main() -> Result<()> {
     println!("Loaded {} scenes.", scenes.len());
     
     // 3. Init Pipeline
-    let device = if args.device == "cuda" { 
-        Device::new_cuda(0)? 
-    } else if args.device == "metal" || (cfg!(target_os = "macos") && args.device == "cpu") {
-        Device::new_metal(0).unwrap_or(Device::Cpu)
-    } else {
-        Device::Cpu 
-    };
+    let device = Device::Cpu; // Stick to CPU for test render to avoid complexity
     
-    let pipeline = match GgufTestPipeline::new(&config.model_path, device.clone()) {
+    let pipeline: Option<GgufTestPipeline> = match GgufTestPipeline::new(&config.model_path, device.clone()) {
         Ok(p) => Some(p),
         Err(e) => {
             eprintln!("Warning: Could not load GGUF model: {}. Running in dry-run mode.", e);
@@ -64,7 +58,7 @@ fn main() -> Result<()> {
             continue;
         }
         
-        println!("Generating Scene (GGUF): {}", scene.id);
+        println!("Generating Scene (GGUF Test): {}", scene.id);
         if let Some(pipe) = &pipeline {
             let image = pipe.generate(&scene.prompt, args.steps)?;
             save_image(&image, &out_path)?;
@@ -74,7 +68,7 @@ fn main() -> Result<()> {
     }
     
     // 5. Assemble
-    assemble_video(&config.assets_dir, &config.assets_dir.join("gollum_gguf_out.mp4"))?;
+    assemble_video(&config.assets_dir, &config.assets_dir.join("gollum_gguf_test_out.mp4"))?;
     
     Ok(())
 }
