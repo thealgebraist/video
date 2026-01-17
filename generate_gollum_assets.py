@@ -559,15 +559,11 @@ def generate_images(args):
             from transformers import BitsAndBytesConfig
 
             if args.quant != "none":
-                quantization_config = BitsAndBytesConfig(
-                    load_in_4bit=True,
-                    bnb_4bit_quant_type="nf4",
-                    bnb_4bit_compute_dtype=torch.bfloat16,
-                )
+                # For FLUX, use load_in_4bit directly (no BitsAndBytesConfig)
                 pipe = FluxPipeline.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
                     torch_dtype=torch.bfloat16,
-                    quantization_config=quantization_config,
+                    load_in_4bit=True,
                     device_map="balanced",  # Shard across all GPUs
                 )
             else:
