@@ -14,9 +14,7 @@ import argparse
 # from vidlib import utils, assemble
 from diffusers import DiffusionPipeline, StableAudioPipeline, FluxPipeline
 from transformers import pipeline, BitsAndBytesConfig
-from PIL import Image
 import multiprocessing as mp
-from functools import partial
 
 # --- Configuration ---
 PROJECT_NAME = "gollum_developer"
@@ -441,34 +439,6 @@ VO_LINES = [
 ]
 
 
-def generate_plasma_image(prompt, out_path, width=1280, height=720):
-    """Generates a plasma/gradient image as a fallback."""
-    print(f"  [Fallback] Generating plasma image for: {prompt[:30]}...")
-    arr = np.zeros((height, width, 3), dtype=np.uint8)
-    seed = sum(ord(c) for c in prompt) % 1000
-    np.random.seed(seed)
-
-    c1 = np.random.randint(0, 128, 3)
-    c2 = np.random.randint(128, 255, 3)
-
-    for y in range(height):
-        ratio = y / height
-        color = (c1 * (1 - ratio) + c2 * ratio).astype(np.uint8)
-        arr[y, :, :] = color
-
-    for _ in range(5):
-        rx, ry = np.random.randint(0, width), np.random.randint(0, height)
-        rc = np.random.randint(0, 255, 3)
-        radius = np.random.randint(100, 400)
-        yy, xx = np.mgrid[:height, :width]
-        dist = np.sqrt((xx - rx) ** 2 + (yy - ry) ** 2)
-        mask = np.exp(-dist / radius)[:, :, np.newaxis]
-        arr = (arr * (1 - mask) + rc * mask).astype(np.uint8)
-
-    img = Image.fromarray(arr)
-    img.save(out_path)
-
-
 def _generate_images_worker(gpu_id, scenes_chunk, args):
     """Worker function for multi-GPU image generation."""
     device = f"cuda:{gpu_id}"
@@ -886,6 +856,9 @@ def assemble_video(assets_dir, output_file):
 # ... (rest of main)
 
 if __name__ == "__main__":
+    # Set multiprocessing start method to 'spawn' for CUDA compatibility
+    mp.set_start_method("spawn", force=True)
+
     parser = argparse.ArgumentParser(description="Generate Gollum Developer Assets")
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--steps", type=int, default=DEFAULT_STEPS)
