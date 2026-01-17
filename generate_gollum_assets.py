@@ -605,21 +605,21 @@ def generate_images(args):
 
     except Exception as e:
         print(f"  [Error] Failed to load model {model_id}: {e}")
-        print("  Falling back to procedural plasma generation.")
+        print("  Skipping image generation (no model available).")
+        return
 
     for s_id, prompt, _ in SCENES:
         out_path = f"{ASSETS_DIR}/images/{s_id}.png"
         if not os.path.exists(out_path):
-            if pipe:
-                print(f"Generating: {s_id}")
-                image = pipe(
-                    prompt,
-                    num_inference_steps=steps,
-                    guidance_scale=args.guidance,
-                    width=1280,
-                    height=720,
-                ).images[0]
-                image.save(out_path)
+            print(f"Generating: {s_id}")
+            image = pipe(
+                prompt,
+                num_inference_steps=steps,
+                guidance_scale=args.guidance,
+                width=1280,
+                height=720,
+            ).images[0]
+            image.save(out_path)
 
     if pipe:
         del pipe

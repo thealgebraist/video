@@ -209,25 +209,29 @@ def generate_images(args, variant):
                     torch.cuda.empty_cache()
 
 
-def generate_sfx(args):
-    print(f"--- Generating SFX with Stable Audio Open on {DEVICE} ---")
+def generate_sfx(args, variant):
+    """Generate SFX for a specific trailer variant."""
+    assets_dir = f"assets_horror_{variant['name']}"
+    scenes = variant["scenes"]
+
+    print(f"--- Generating SFX for '{variant['title']}' ---")
     pipe = None
     try:
         pipe = StableAudioPipeline.from_pretrained(
             "stabilityai/stable-audio-open-1.0",
             torch_dtype=torch.float16,
-            local_files_only=True,
         ).to(DEVICE)
         utils.remove_weight_norm(pipe)
         if args.scalenorm:
             utils.apply_stability_improvements(pipe.transformer, use_scalenorm=True)
     except Exception as e:
         print(f"  [Error] Failed to load Stable Audio: {e}")
-        print("  Using procedural SFX fallback.")
+        print("  Skipping SFX generation.")
+        return
 
-    os.makedirs(f"{ASSETS_DIR}/sfx", exist_ok=True)
-    for s_id, _, sfx_prompt in SCENES:
-        out_path = f"{ASSETS_DIR}/sfx/{s_id}.wav"
+    os.makedirs(f"{assets_dir}/sfx", exist_ok=True)
+    for s_id, _, sfx_prompt in scenes:
+        out_path = f"{assets_dir}/sfx/{s_id}.wav"
         if not os.path.exists(out_path):
             if pipe:
                 print(f"Generating SFX for: {s_id} -> {sfx_prompt}")
@@ -237,7 +241,7 @@ def generate_sfx(args):
                 audio_np = audio.T.cpu().numpy()
                 wavfile.write(out_path, 44100, (audio_np * 32767).astype(np.int16))
             else:
-                generate_mock_audio(sfx_prompt, out_path, duration_s=10.0)
+                print(f"  Skipping {s_id} (no model loaded)")
     if pipe:
         del pipe
     gc.collect()
@@ -248,16 +252,20 @@ def apply_trailer_voice_effect(input_path):
     print(f"  [Stub] Applying trailer voice effects to {input_path}...")
 
 
-def generate_voiceover(args):
-    print(f"--- Generating Voiceover fallback on {DEVICE} ---")
-    os.makedirs(f"{ASSETS_DIR}/voice", exist_ok=True)
-    out_path_full = f"{ASSETS_DIR}/voice/voiceover_full.wav"
-    lines = [l.strip() for l in VO_SCRIPT.split("\n") if l.strip()]
+def generate_voiceover(args, variant):
+    """Generate voiceover for a specific trailer variant."""
+    assets_dir = f"assets_horror_{variant['name']}"
+    vo_script = variant["voiceover"]
+
+    print(f"--- Generating Voiceover for '{variant['title']}' on {DEVICE} ---")
+    os.makedirs(f"{assets_dir}/voice", exist_ok=True)
+    out_path_full = f"{assets_dir}/voice/voiceover_full.wav"
+    lines = [l.strip() for l in vo_script.split("\n") if l.strip()]
     full_audio_data = []
     sampling_rate = 44100
     for i, line in enumerate(lines):
         line_filename = f"vo_{i:03d}.wav"
-        line_out_path = f"{ASSETS_DIR}/voice/{line_filename}"
+        line_out_path = f"{assets_dir}/voice/{line_filename}"
         if os.path.exists(line_out_path):
             print(f"  Skipping existing line {i}: {line[:30]}...")
             try:
@@ -286,17 +294,20 @@ def generate_voiceover(args):
             print(f"  Error concatenating audio (shape mismatch?): {e}")
 
 
-def generate_music(args):
-    print(f"--- Generating Background Music with Stable Audio on {DEVICE} ---")
-    os.makedirs(f"{ASSETS_DIR}/music", exist_ok=True)
-    tracks = [
-        ("horror_theme.wav", 45.0),
-        ("horror_theme_long_01.wav", 160.0),
-        ("horror_theme_long_02.wav", 160.0),
-    ]
+def generate_music(args, variant):
+    """Generate background music for a specific trailer variant."""
+    assets_dir = f"assets_horror_{variant['name']}"
+    music_tracks = variant["music_tracks"]
+
+    print(f"--- Generating Background Music for '{variant['title']}' on {DEVICE} ---")
+    os.makedirs(f"{assets_dir}/music", exist_ok=True)
     pipe = None
-    for filename, duration_s in tracks:
-        out_path = f"{ASSETS_DIR}/music/{filename}"
+    for track_data in music_tracks:
+        filename = track_data["filename"]
+        duration_s = track_data["duration_s"]
+        prompt = track_data["prompt"]
+
+        out_path = f"{assets_dir}/music/{filename}"
         if os.path.exists(out_path):
             print(f"  Skipping {filename} (exists)")
             continue
