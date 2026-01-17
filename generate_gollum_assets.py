@@ -749,6 +749,41 @@ def generate_sfx(args):
         torch.cuda.empty_cache()
 
 
+def _generate_voiceover_worker(gpu_id, lines_chunk, start_idx, args):
+    """Worker function for multi-GPU voiceover generation."""
+    device = f"cuda:{gpu_id}"
+    print(
+        f"[GPU {gpu_id}] Starting VO generation for {len(lines_chunk)} lines (starting at idx {start_idx})"
+    )
+
+    try:
+        from transformers import pipeline
+
+        tts = pipeline("text-to-speech", model="suno/bark", device=device)
+
+        # Fix attention mask warnings
+        if hasattr(tts.model, "generation_config"):
+            tts.model.generation_config.pad_token_id = (
+                tts.model.generation_config.eos_token_id
+            )
+
+        for i, line in enumerate(lines_chunk):
+            global_idx = start_idx + i
+            out_path_i = f"{ASSETS_DIR}/voice/vo_{global_idx:03d}.wav"
+
+            if not os.path.exists(out_path_i):
+                print(f"[GPU {gpu_id}] Speaking {global_idx + 1}: {line[:30]}...")
+                output = tts(line)
+                audio_data = output["audio"].flatten()
+                wavfile.write(
+                    out_path_i,
+                    output["sampling_rate"],
+                    (audio_data * 32767).astype(np.int16),
+                )
+    except Exception as e:
+        print(f"[GPU {gpu_id}] Error in VO worker: {e}")
+
+
 def generate_voiceover(args):
     print(f"--- Generating Voiceover with Bark on {DEVICE} ---")
     os.makedirs(f"{ASSETS_DIR}/voice", exist_ok=True)
@@ -759,57 +794,82 @@ def generate_voiceover(args):
             f"Warning: Number of VO lines ({len(VO_LINES)}) does not match number of scenes ({len(SCENES)})"
         )
 
-    tts = pipeline("text-to-speech", model="suno/bark", device=DEVICE)
+    # Multi-GPU parallel generation
+    if args.multigpu and args.multigpu > 1:
+        print(f"--- Generating Voiceover across {args.multigpu} GPUs ---")
 
-    # Fix attention mask warnings by setting pad_token
-    if hasattr(tts.model, "generation_config"):
-        tts.model.generation_config.pad_token_id = (
-            tts.model.generation_config.eos_token_id
-        )
+        # Split lines across GPUs
+        chunk_size = len(VO_LINES) // args.multigpu
+        chunks = [
+            VO_LINES[i : i + chunk_size] for i in range(0, len(VO_LINES), chunk_size)
+        ]
 
-    full_audio = []
-    sampling_rate = 24000
+        # Adjust potential extra chunks
+        if len(chunks) > args.multigpu:
+            chunks[-2] = chunks[-2] + chunks[-1]
+            chunks = chunks[:-1]
 
-    for i, line in enumerate(VO_LINES):
-        s_id = SCENES[i][0]
-        out_path_i = f"{ASSETS_DIR}/voice/vo_{i:03d}.wav"  # Changed to use index for consistent naming
+        processes = []
+        current_idx = 0
+        for gpu_id, chunk in enumerate(chunks):
+            p = mp.Process(
+                target=_generate_voiceover_worker,
+                args=(gpu_id, chunk, current_idx, args),
+            )
+            p.start()
+            processes.append(p)
+            current_idx += len(chunk)
 
-        if not os.path.exists(out_path_i):
-            print(f"  Speaking {i + 1}/{len(VO_LINES)}: {line[:30]}...")
-            output = tts(line)
-            audio_data = output["audio"].flatten()
-            wavfile.write(
-                out_path_i,
-                output["sampling_rate"],
-                (audio_data * 32767).astype(np.int16),
+        for p in processes:
+            p.join()
+
+        print("--- Multi-GPU Voiceover generation complete ---")
+    else:
+        # Single GPU Code
+        tts = pipeline("text-to-speech", model="suno/bark", device=DEVICE)
+
+        # Fix attention mask warnings by setting pad_token
+        if hasattr(tts.model, "generation_config"):
+            tts.model.generation_config.pad_token_id = (
+                tts.model.generation_config.eos_token_id
             )
 
-            # For the full mix
-            full_audio.append(audio_data)
-            full_audio.append(
-                np.zeros(int(output["sampling_rate"] * 0.5))
-            )  # 0.5s pause
-            sampling_rate = output["sampling_rate"]
-        else:
-            # Load existing for full mix
-            sr, data = wavfile.read(out_path_i)
-            # Normalize to float for concatenation list
-            if data.dtype == np.int16:
-                data = data.astype(np.float32) / 32767.0
-            full_audio.append(data)
-            full_audio.append(np.zeros(int(sr * 0.5)))
-            sampling_rate = sr
+        for i, line in enumerate(VO_LINES):
+            out_path_i = f"{ASSETS_DIR}/voice/vo_{i:03d}.wav"
 
-    out_path_full = f"{ASSETS_DIR}/voice/voiceover_full.wav"
-    if full_audio and not os.path.exists(out_path_full):
+            if not os.path.exists(out_path_i):
+                print(f"  Speaking {i + 1}/{len(VO_LINES)}: {line[:30]}...")
+                output = tts(line)
+                audio_data = output["audio"].flatten()
+                wavfile.write(
+                    out_path_i,
+                    output["sampling_rate"],
+                    (audio_data * 32767).astype(np.int16),
+                )
+
+    # Re-assemble full mix (done sequentially from files)
+    full_audio = []
+    sampling_rate = 24000  # Default for Bark
+
+    print("Assembling full voiceover mix...")
+    for i in range(len(VO_LINES)):
+        out_path_i = f"{ASSETS_DIR}/voice/vo_{i:03d}.wav"
+        if os.path.exists(out_path_i):
+            try:
+                rate, data = wavfile.read(out_path_i)
+                sampling_rate = rate
+                full_audio.append(data.astype(np.float32) / 32767.0)
+                full_audio.append(np.zeros(int(rate * 0.5)))  # 0.5s pause
+            except Exception as e:
+                print(f"Error reading {out_path_i}: {e}")
+
+    if full_audio:
+        final_mix = np.concatenate(full_audio)
         wavfile.write(
-            out_path_full,
+            f"{ASSETS_DIR}/voice/full_mix.wav",
             sampling_rate,
-            (np.concatenate(full_audio) * 32767).astype(np.int16),
+            (final_mix * 32767).astype(np.int16),
         )
-
-    del tts
-    torch.cuda.empty_cache()
 
 
 def generate_music(args):
