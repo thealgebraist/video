@@ -465,7 +465,6 @@ def _generate_images_worker(gpu_id, scenes_chunk, args):
 
             pipe = DiffusionPipeline.from_pretrained(
                 args.model,
-                local_files_only=True,
                 safety_checker=None,
                 requires_safety_checker=False,
                 **pipe_kwargs,
@@ -506,7 +505,6 @@ def _generate_sfx_worker(gpu_id, scenes_chunk, args):
         pipe = StableAudioPipeline.from_pretrained(
             "stabilityai/stable-audio-open-1.0",
             torch_dtype=torch.float16,
-            local_files_only=True,
         ).to(device)
     except Exception as e:
         print(f"[GPU {gpu_id}] Failed to load Stable Audio: {e}")
@@ -586,7 +584,6 @@ def generate_images(args):
 
             pipe = DiffusionPipeline.from_pretrained(
                 model_id,
-                local_files_only=True,
                 safety_checker=None,
                 requires_safety_checker=False,
                 **pipe_kwargs,
@@ -670,9 +667,7 @@ def generate_sfx(args):
     pipe = None
     try:
         pipe = StableAudioPipeline.from_pretrained(
-            "stabilityai/stable-audio-open-1.0",
-            torch_dtype=torch.float16,
-            local_files_only=True,
+            "stabilityai/stable-audio-open-1.0", torch_dtype=torch.float16
         ).to(DEVICE)
         remove_weight_norm(pipe)
         if args.scalenorm:
