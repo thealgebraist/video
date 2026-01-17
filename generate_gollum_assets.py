@@ -447,19 +447,29 @@ def _generate_images_worker(gpu_id, scenes_chunk, args):
     pipe = None
     try:
         if args.model == "black-forest-labs/FLUX.1-schnell":
-            pipe_kwargs = {
-                "torch_dtype": torch.bfloat16,
-            }
+            from transformers import BitsAndBytesConfig
+
             if args.quant != "none":
-                pipe_kwargs["transformer_quantization_config"] = BitsAndBytesConfig(
+                # For FLUX with 4-bit quantization, use balanced device_map
+                # This shards the model across all available GPUs
+                quantization_config = BitsAndBytesConfig(
                     load_in_4bit=True,
                     bnb_4bit_quant_type="nf4",
                     bnb_4bit_compute_dtype=torch.bfloat16,
                 )
-            pipe = FluxPipeline.from_pretrained(
-                "black-forest-labs/FLUX.1-schnell",
-                **pipe_kwargs,
-            ).to(device)
+                pipe = FluxPipeline.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    torch_dtype=torch.bfloat16,
+                    quantization_config=quantization_config,
+                    device_map="balanced",  # Shard across all GPUs
+                )
+            else:
+                # Without quantization, still use balanced for multi-GPU
+                pipe = FluxPipeline.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    torch_dtype=torch.bfloat16,
+                    device_map="balanced",
+                )
         else:
             pipe_kwargs = {
                 "torch_dtype": torch.bfloat16 if "cuda" in device else torch.float32
