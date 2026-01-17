@@ -556,10 +556,8 @@ def generate_images(args):
     pipe = None
     try:
         if model_id == "black-forest-labs/FLUX.1-schnell":
-            from transformers import BitsAndBytesConfig
-
             if args.quant != "none":
-                # For FLUX, use load_in_4bit directly (no BitsAndBytesConfig)
+                # For FLUX, use load_in_4bit directly (no quantization_config)
                 pipe = FluxPipeline.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
                     torch_dtype=torch.bfloat16,
