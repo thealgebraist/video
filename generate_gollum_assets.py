@@ -447,19 +447,11 @@ def _generate_images_worker(gpu_id, scenes_chunk, args):
     pipe = None
     try:
         if args.model == "black-forest-labs/FLUX.1-schnell":
-            if args.quant != "none":
-                # FLUX with 4-bit quantization on specific GPU
-                pipe = FluxPipeline.from_pretrained(
-                    "black-forest-labs/FLUX.1-schnell",
-                    torch_dtype=torch.bfloat16,
-                    load_in_4bit=True,
-                ).to(device)
-            else:
-                # FLUX without quantization
-                pipe = FluxPipeline.from_pretrained(
-                    "black-forest-labs/FLUX.1-schnell",
-                    torch_dtype=torch.bfloat16,
-                ).to(device)
+            # FLUX doesn't support load_in_4bit, use bfloat16
+            pipe = FluxPipeline.from_pretrained(
+                "black-forest-labs/FLUX.1-schnell",
+                torch_dtype=torch.bfloat16,
+            ).to(device)
         else:
             pipe_kwargs = {
                 "torch_dtype": torch.bfloat16 if "cuda" in device else torch.float32
@@ -574,17 +566,11 @@ def generate_images(args):
     pipe = None
     try:
         if model_id == "black-forest-labs/FLUX.1-schnell":
-            if args.quant != "none":
-                pipe = FluxPipeline.from_pretrained(
-                    "black-forest-labs/FLUX.1-schnell",
-                    torch_dtype=torch.bfloat16,
-                    load_in_4bit=True,
-                )
-            else:
-                pipe = FluxPipeline.from_pretrained(
-                    "black-forest-labs/FLUX.1-schnell",
-                    torch_dtype=torch.bfloat16,
-                )
+            # FLUX doesn't support load_in_4bit, use bfloat16
+            pipe = FluxPipeline.from_pretrained(
+                "black-forest-labs/FLUX.1-schnell",
+                torch_dtype=torch.bfloat16,
+            )
             pipe.to(DEVICE)
         else:
             pipe_kwargs = {
