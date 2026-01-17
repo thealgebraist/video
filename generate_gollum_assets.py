@@ -12,7 +12,7 @@ import scipy.io.wavfile as wavfile
 import argparse
 
 # from vidlib import utils, assemble
-from diffusers import DiffusionPipeline, StableAudioPipeline
+from diffusers import DiffusionPipeline, StableAudioPipeline, FluxPipeline
 from transformers import pipeline, BitsAndBytesConfig
 from PIL import Image
 
@@ -439,6 +439,34 @@ VO_LINES = [
 ]
 
 
+def generate_plasma_image(prompt, out_path, width=1280, height=720):
+    """Generates a plasma/gradient image as a fallback."""
+    print(f"  [Fallback] Generating plasma image for: {prompt[:30]}...")
+    arr = np.zeros((height, width, 3), dtype=np.uint8)
+    seed = sum(ord(c) for c in prompt) % 1000
+    np.random.seed(seed)
+
+    c1 = np.random.randint(0, 128, 3)
+    c2 = np.random.randint(128, 255, 3)
+
+    for y in range(height):
+        ratio = y / height
+        color = (c1 * (1 - ratio) + c2 * ratio).astype(np.uint8)
+        arr[y, :, :] = color
+
+    for _ in range(5):
+        rx, ry = np.random.randint(0, width), np.random.randint(0, height)
+        rc = np.random.randint(0, 255, 3)
+        radius = np.random.randint(100, 400)
+        yy, xx = np.mgrid[:height, :width]
+        dist = np.sqrt((xx - rx) ** 2 + (yy - ry) ** 2)
+        mask = np.exp(-dist / radius)[:, :, np.newaxis]
+        arr = (arr * (1 - mask) + rc * mask).astype(np.uint8)
+
+    img = Image.fromarray(arr)
+    img.save(out_path)
+
+
 def generate_images(args):
     model_id = args.model
     steps = args.steps
@@ -446,48 +474,72 @@ def generate_images(args):
         f"--- Generating {len(SCENES)} {model_id} Images ({steps} steps) on {DEVICE} ---"
     )
 
-    pipe_kwargs = {"torch_dtype": torch.bfloat16 if DEVICE == "cuda" else torch.float32}
-    if args.quant != "none" and DEVICE == "cuda":
-        pipe_kwargs["transformer_quantization_config"] = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16,
-        )
+    pipe = None
+    try:
+        if model_id == "black-forest-labs/FLUX.1-schnell":
+            print("Loading FluxPipeline with device_map='balanced'...")
+            pipe = FluxPipeline.from_pretrained(
+                "black-forest-labs/FLUX.1-schnell",
+                torch_dtype=torch.bfloat16,
+                device_map="balanced",
+            )
+        else:
+            pipe_kwargs = {
+                "torch_dtype": torch.bfloat16 if DEVICE == "cuda" else torch.float32
+            }
+            if args.quant != "none" and DEVICE == "cuda":
+                pipe_kwargs["transformer_quantization_config"] = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                )
 
-    pipe = DiffusionPipeline.from_pretrained(
-        model_id,
-        local_files_only=True,
-        safety_checker=None,
-        requires_safety_checker=False,
-        **pipe_kwargs,
-    )
-    remove_weight_norm(pipe)
-    if args.scalenorm:
-        apply_stability_improvements(pipe.transformer, use_scalenorm=True)
+            pipe = DiffusionPipeline.from_pretrained(
+                model_id,
+                local_files_only=True,
+                safety_checker=None,
+                requires_safety_checker=False,
+                **pipe_kwargs,
+            )
+            remove_weight_norm(pipe)
+            if args.scalenorm:
+                if hasattr(pipe, "transformer"):
+                    apply_stability_improvements(pipe.transformer, use_scalenorm=True)
+                elif hasattr(pipe, "unet"):
+                    apply_stability_improvements(pipe.unet, use_scalenorm=True)
 
-    if args.offload and DEVICE == "cuda":
-        pipe.enable_model_cpu_offload()
-    elif args.quant != "none" and DEVICE == "cuda":
-        if not hasattr(pipe, "hf_device_map"):
-            pipe.to(DEVICE)
-    else:
-        pipe.to(DEVICE)
+            if args.offload and DEVICE == "cuda":
+                pipe.enable_model_cpu_offload()
+            elif args.quant != "none" and DEVICE == "cuda":
+                if not hasattr(pipe, "hf_device_map"):
+                    pipe.to(DEVICE)
+            else:
+                pipe.to(DEVICE)
+
+    except Exception as e:
+        print(f"  [Error] Failed to load model {model_id}: {e}")
+        print("  Falling back to procedural plasma generation.")
 
     os.makedirs(f"{ASSETS_DIR}/images", exist_ok=True)
     for s_id, prompt, _ in SCENES:
         out_path = f"{ASSETS_DIR}/images/{s_id}.png"
         if not os.path.exists(out_path):
-            print(f"Generating: {s_id}")
-            image = pipe(
-                prompt,
-                num_inference_steps=steps,
-                guidance_scale=args.guidance,
-                width=1280,
-                height=720,
-            ).images[0]
-            image.save(out_path)
-    del pipe
-    torch.cuda.empty_cache()
+            if pipe:
+                print(f"Generating: {s_id}")
+                image = pipe(
+                    prompt,
+                    num_inference_steps=steps,
+                    guidance_scale=args.guidance,
+                    width=1280,
+                    height=720,
+                ).images[0]
+                image.save(out_path)
+            else:
+                generate_plasma_image(prompt, out_path)
+
+    if pipe:
+        del pipe
+        torch.cuda.empty_cache()
 
 
 def generate_sfx(args):
