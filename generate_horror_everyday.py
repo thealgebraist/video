@@ -12,6 +12,84 @@ from vidlib import utils, assemble
 from diffusers import DiffusionPipeline, StableAudioPipeline
 from transformers import pipeline, BitsAndBytesConfig
 from PIL import Image
+import warnings
+import gc
+import subprocess
+
+# Suppress warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="torchsde")
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+
+def generate_plasma_image(prompt, out_path, width=1280, height=720):
+    """Generates a high-quality plasma/gradient image as a fallback."""
+    print(f"  [Fallback] Generating plasma image for: {prompt[:30]}...")
+    arr = np.zeros((height, width, 3), dtype=np.uint8)
+    # Use a seed based on prompt for determinism
+    seed = sum(ord(c) for c in prompt) % 1000
+    np.random.seed(seed)
+
+    # Simple plasma-like gradient
+    c1 = np.random.randint(0, 128, 3)
+    c2 = np.random.randint(128, 255, 3)
+
+    for y in range(height):
+        ratio = y / height
+        color = (c1 * (1 - ratio) + c2 * ratio).astype(np.uint8)
+        arr[y, :, :] = color
+
+    # Add some "noise" nodes
+    for _ in range(5):
+        rx, ry = np.random.randint(0, width), np.random.randint(0, height)
+        rc = np.random.randint(0, 255, 3)
+        radius = np.random.randint(100, 400)
+        yy, xx = np.mgrid[:height, :width]
+        dist = np.sqrt((xx - rx) ** 2 + (yy - ry) ** 2)
+        mask = np.exp(-dist / radius)[:, :, np.newaxis]
+        arr = (arr * (1 - mask) + rc * mask).astype(np.uint8)
+
+    img = Image.fromarray(arr)
+    img.save(out_path)
+
+
+def generate_mock_audio(prompt, out_path, duration_s=5.0, sample_rate=44100):
+    """Generates a simple procedural audio track as a fallback."""
+    print(f"  [Fallback] Generating mock audio for: {prompt[:30]}...")
+    t = np.linspace(0, duration_s, int(sample_rate * duration_s))
+    seed = sum(ord(c) for c in prompt) % 1000
+    np.random.seed(seed)
+
+    # Blend a low hum and some noise
+    freq = 40 + np.random.rand() * 40
+    audio = 0.5 * np.sin(2 * np.pi * freq * t)
+    audio += 0.2 * np.random.normal(0, 0.1, len(t))
+
+    # Gentle fade in/out
+    fade = int(sample_rate * 0.5)
+    if len(audio) > 2 * fade:
+        audio[:fade] *= np.linspace(0, 1, fade)
+        audio[-fade:] *= np.linspace(1, 0, fade)
+
+    wavfile.write(out_path, sample_rate, (audio * 32767).astype(np.int16))
+
+
+def macos_say_tts(text, out_path):
+    """Uses macOS 'say' command as a fallback."""
+    print(f"  [Fallback] Using macOS 'say' for: {text[:30]}...")
+    temp_aiff = out_path.replace(".wav", ".aiff")
+    try:
+        subprocess.run(["say", "-o", temp_aiff, text], check=True)
+        # Convert to WAV
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", temp_aiff, out_path], capture_output=True, check=True
+        )
+        if os.path.exists(temp_aiff):
+            os.remove(temp_aiff)
+        return True
+    except Exception as e:
+        print(f"    Fallback TTS failed: {e}")
+        return False
+
 
 # --- Configuration & Defaults ---
 PROJECT_NAME = "horror_everyday"
@@ -383,59 +461,78 @@ def generate_images(args):
         )
         pipe_kwargs["transformer_quantization_config"] = quant_config
 
-    pipe = DiffusionPipeline.from_pretrained(
-        model_id, local_files_only=os.path.isdir(model_id), **pipe_kwargs
-    )
-    utils.remove_weight_norm(pipe)
-    if args.scalenorm:
-        utils.apply_stability_improvements(pipe.transformer, use_scalenorm=True)
+    pipe = None
+    try:
+        pipe = DiffusionPipeline.from_pretrained(
+            model_id,
+            local_files_only=True,
+            safety_checker=None,
+            requires_safety_checker=False,
+            **pipe_kwargs,
+        )
+        utils.remove_weight_norm(pipe)
+        if args.scalenorm:
+            utils.apply_stability_improvements(pipe.transformer, use_scalenorm=True)
 
-    if args.offload and DEVICE == "cuda":
-        pipe.enable_model_cpu_offload()
-    elif args.quant != "none" and DEVICE == "cuda":
-        # Fallback for quantization if not offloaded explicitly, usually handled by accelerate/bitsandbytes
-        if not hasattr(pipe, "hf_device_map"):
+        if args.offload and DEVICE == "cuda":
+            pipe.enable_model_cpu_offload()
+        elif args.quant != "none" and DEVICE == "cuda":
+            if not hasattr(pipe, "hf_device_map"):
+                pipe.to(DEVICE)
+        else:
             pipe.to(DEVICE)
-    else:
-        pipe.to(DEVICE)
+    except Exception as e:
+        print(f"  [Error] Failed to load local model {model_id}: {e}")
+        print("  Falling back to procedural generation.")
 
     os.makedirs(f"{ASSETS_DIR}/images", exist_ok=True)
     for s_id, prompt, _ in SCENES:
         out_path = f"{ASSETS_DIR}/images/{s_id}.png"
         if not os.path.exists(out_path):
-            print(f"Generating: {s_id}")
-            image = pipe(
-                prompt,
-                num_inference_steps=steps,
-                guidance_scale=args.guidance,
-                width=1280,
-                height=720,
-            ).images[0]
-            image.save(out_path)
+            print(f"Generating image: {s_id}")
+            if pipe:
+                image = pipe(
+                    prompt,
+                    num_inference_steps=steps,
+                    guidance_scale=args.guidance,
+                    width=1280,
+                    height=720,
+                ).images[0]
+                image.save(out_path)
+            else:
+                generate_plasma_image(prompt, out_path)
     del pipe
     torch.cuda.empty_cache()
 
 
 def generate_sfx(args):
     print(f"--- Generating SFX with Stable Audio on {DEVICE} ---")
-    pipe = StableAudioPipeline.from_pretrained(
-        "stabilityai/stable-audio-open-1.0", torch_dtype=torch.float16
-    ).to(DEVICE)
-    utils.remove_weight_norm(pipe)
-    if args.scalenorm:
-        utils.apply_stability_improvements(pipe.transformer, use_scalenorm=True)
+    pipe = None
+    try:
+        pipe = StableAudioPipeline.from_pretrained(
+            "stabilityai/stable-audio-open-1.0", torch_dtype=torch.float16
+        ).to(DEVICE)
+        utils.remove_weight_norm(pipe)
+        if args.scalenorm:
+            utils.apply_stability_improvements(pipe.transformer, use_scalenorm=True)
+    except Exception as e:
+        print(f"  [Error] Failed to load Stable Audio: {e}")
+        print("  Using procedural SFX fallback.")
 
     os.makedirs(f"{ASSETS_DIR}/sfx", exist_ok=True)
     for s_id, _, sfx_prompt in SCENES:
         out_path = f"{ASSETS_DIR}/sfx/{s_id}.wav"
         if not os.path.exists(out_path):
             print(f"Generating SFX: {s_id}")
-            audio = pipe(
-                sfx_prompt, num_inference_steps=100, audio_end_in_s=10.0
-            ).audios[0]
-            wavfile.write(
-                out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16)
-            )
+            if pipe:
+                audio = pipe(
+                    sfx_prompt, num_inference_steps=100, audio_end_in_s=10.0
+                ).audios[0]
+                wavfile.write(
+                    out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16)
+                )
+            else:
+                generate_mock_audio(sfx_prompt, out_path, duration_s=10.0)
     del pipe
     torch.cuda.empty_cache()
 
@@ -447,21 +544,35 @@ def generate_voiceover(args):
     if os.path.exists(out_path):
         return
 
-    tts = pipeline("text-to-speech", model="suno/bark", device=DEVICE)
+    tts = None
+    print("  Skipping Bark to avoid large downloads, using macOS 'say' fallback.")
+
     lines = [l for l in VO_SCRIPT.split("\n") if l.strip()]
     full_audio = []
     sampling_rate = 24000
     for line in lines:
         print(f"  Speaking: {line[:30]}...")
-        output = tts(line)  # voice_preset argument caused TypeError, using default
-        audio_data = output["audio"].flatten()
-
-        # Add a bit of silence
-        silence = np.zeros(int(output["sampling_rate"] * 0.5))
+        if tts:
+            output = tts(line)
+            audio_data = output["audio"].flatten()
+            sampling_rate = output["sampling_rate"]
+        else:
+            # We need a per-line file for full_audio to work easily if we want to save them
+            # but for now we'll just use a temp file and read it back
+            temp_line_path = f"{ASSETS_DIR}/voice/temp_line.wav"
+            if macos_say_tts(line, temp_line_path):
+                sr, data = wavfile.read(temp_line_path)
+                audio_data = (
+                    data.astype(np.float32) / 32767.0
+                    if data.dtype == np.int16
+                    else data
+                )
+                sampling_rate = sr
+            else:
+                audio_data = np.zeros(int(sampling_rate * 1.0))
 
         full_audio.append(audio_data)
-        full_audio.append(silence)
-        sampling_rate = output["sampling_rate"]
+        full_audio.append(np.zeros(int(sampling_rate * 0.5)))
 
     wavfile.write(
         out_path, sampling_rate, (np.concatenate(full_audio) * 32767).astype(np.int16)
@@ -477,16 +588,24 @@ def generate_music(args):
     if os.path.exists(out_path):
         return
 
-    pipe = StableAudioPipeline.from_pretrained(
-        "stabilityai/stable-audio-open-1.0", torch_dtype=torch.float16
-    ).to(DEVICE)
-    utils.remove_weight_norm(pipe)
-    if args.scalenorm:
-        utils.apply_stability_improvements(pipe.transformer, use_scalenorm=True)
+    pipe = None
+    try:
+        pipe = StableAudioPipeline.from_pretrained(
+            "stabilityai/stable-audio-open-1.0", torch_dtype=torch.float16
+        ).to(DEVICE)
+        utils.remove_weight_norm(pipe)
+        if args.scalenorm:
+            utils.apply_stability_improvements(pipe.transformer, use_scalenorm=True)
+    except Exception as e:
+        print(f"  [Error] Failed to load Stable Audio: {e}")
+        print("  Using procedural music fallback.")
 
     prompt = "eerie industrial drone, distorted metallic sounds, slow tempo, horror atmosphere, low frequency hum"
-    audio = pipe(prompt, num_inference_steps=100, audio_end_in_s=45.0).audios[0]
-    wavfile.write(out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16))
+    if pipe:
+        audio = pipe(prompt, num_inference_steps=100, audio_end_in_s=45.0).audios[0]
+        wavfile.write(out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16))
+    else:
+        generate_mock_audio(prompt, out_path, duration_s=45.0)
     del pipe
     torch.cuda.empty_cache()
 

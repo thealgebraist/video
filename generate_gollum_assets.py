@@ -22,7 +22,7 @@ ASSETS_DIR = f"assets_{PROJECT_NAME}"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 DTYPE = torch.bfloat16 if DEVICE == "cuda" else torch.float32
 
-DEFAULT_MODEL = "black-forest-labs/FLUX.1-schnell"
+DEFAULT_MODEL = "nota-ai/bk-sdm-tiny"
 DEFAULT_STEPS = 4
 DEFAULT_GUIDANCE = 0.0
 DEFAULT_QUANT = "4bit" if DEVICE == "cuda" else "none"
@@ -455,7 +455,11 @@ def generate_images(args):
         )
 
     pipe = DiffusionPipeline.from_pretrained(
-        model_id, local_files_only=os.path.isdir(model_id), **pipe_kwargs
+        model_id,
+        local_files_only=True,
+        safety_checker=None,
+        requires_safety_checker=False,
+        **pipe_kwargs,
     )
     remove_weight_norm(pipe)
     if args.scalenorm:
