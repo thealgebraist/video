@@ -349,7 +349,11 @@ def generate_music(args):
 
 
 if __name__ == "__main__":
+    import multiprocessing as mp
     from vidlib import assets
+
+    # Set multiprocessing start method for CUDA compatibility
+    mp.set_start_method("spawn", force=True)
 
     parser = argparse.ArgumentParser(description="Generate Horror Assets")
     parser.add_argument("--model", type=str)
@@ -363,9 +367,19 @@ if __name__ == "__main__":
         action="store_true",
         help="Use FluxPipeline with device_map=balanced",
     )
+    parser.add_argument(
+        "--multigpu",
+        type=int,
+        default=None,
+        help="Number of GPUs for parallel generation",
+    )
     args = parser.parse_args()
 
-    generate_images(args)
-    generate_sfx(args)
-    generate_voiceover(args)
-    generate_music(args)
+    # Generate assets for all horror variants
+    for variant in TRAILER_VARIANTS:
+        print(f"\n{'=' * 60}\nGenerating assets for: {variant['title']}\n{'=' * 60}\n")
+        generate_images(args, variant)
+        generate_sfx(args, variant)
+        generate_voiceover(args, variant)
+        generate_music(args, variant)
+        print(f"\nCompleted: {variant['title']}\n")
