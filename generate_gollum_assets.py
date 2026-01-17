@@ -705,12 +705,18 @@ def generate_voiceover(args):
 
     tts = pipeline("text-to-speech", model="suno/bark", device=DEVICE)
 
+    # Fix attention mask warnings by setting pad_token
+    if hasattr(tts.model, "generation_config"):
+        tts.model.generation_config.pad_token_id = (
+            tts.model.generation_config.eos_token_id
+        )
+
     full_audio = []
     sampling_rate = 24000
 
     for i, line in enumerate(VO_LINES):
         s_id = SCENES[i][0]
-        out_path_i = f"{ASSETS_DIR}/voice/{s_id}.wav"
+        out_path_i = f"{ASSETS_DIR}/voice/vo_{i:03d}.wav"  # Changed to use index for consistent naming
 
         if not os.path.exists(out_path_i):
             print(f"  Speaking {i + 1}/{len(VO_LINES)}: {line[:30]}...")
