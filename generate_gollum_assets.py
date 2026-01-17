@@ -563,17 +563,47 @@ def _generate_sfx_worker(gpu_id, scenes_chunk, args):
     except Exception as e:
         print(f"[GPU {gpu_id}] Failed to load Stable Audio: {e}")
 
-    for s_id, _, sfx_prompt in scenes_chunk:
-        out_path = f"{ASSETS_DIR}/sfx/{s_id}.wav"
-        if not os.path.exists(out_path):
-            if pipe:
-                print(f"[GPU {gpu_id}] Generating SFX: {s_id}")
-                audio = pipe(
-                    sfx_prompt, num_inference_steps=100, audio_end_in_s=5.0
-                ).audios[0]
-                wavfile.write(
-                    out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16)
-                )
+    # Process in batches of 3 for concurrent inference on single GPU
+    BATCH_SIZE = 3
+
+    for i in range(0, len(scenes_chunk), BATCH_SIZE):
+        batch = scenes_chunk[i : i + BATCH_SIZE]
+
+        # Filter for scenes that need generation
+        active_batch = []
+        for s in batch:
+            s_id, _, sfx_prompt = s
+            out_path = f"{ASSETS_DIR}/sfx/{s_id}.wav"
+            if not os.path.exists(out_path):
+                active_batch.append((s_id, sfx_prompt))
+
+        if not active_batch:
+            continue
+
+        if pipe:
+            prompts = [s[1] for s in active_batch]
+            ids = [s[0] for s in active_batch]
+
+            print(
+                f"[GPU {gpu_id}] Generating SFX batch ({len(prompts)}): {', '.join(ids)}"
+            )
+
+            try:
+                # Concurrent inference via batching
+                outputs = pipe(
+                    prompts, num_inference_steps=100, audio_end_in_s=5.0
+                ).audios
+
+                # Save outputs
+                for j, audio in enumerate(outputs):
+                    out_path = f"{ASSETS_DIR}/sfx/{ids[j]}.wav"
+                    wavfile.write(
+                        out_path,
+                        44100,
+                        (audio.T.cpu().numpy() * 32767).astype(np.int16),
+                    )
+            except Exception as e:
+                print(f"[GPU {gpu_id}] Error generating batch {ids}: {e}")
 
     if pipe:
         del pipe
