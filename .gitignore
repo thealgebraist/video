@@ -4,4 +4,6 @@ Cargo.lock
 target/
 *.mp4
 *.gguf
-vidlib/__pycache__/flux1_balanced.cpython-314.pyc
+__pycache__/
+assets_*
+*.aiff
