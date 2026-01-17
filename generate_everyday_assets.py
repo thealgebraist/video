@@ -247,6 +247,54 @@ def _generate_voiceover_worker(gpu_id, lines_chunk, start_idx, assets_dir, args)
         print(f"[GPU {gpu_id}] Error in VO worker: {e}")
 
 
+def _generate_music_worker(gpu_id, prompts_chunk, assets_dir, args):
+    """Worker function for multi-GPU music generation."""
+    device = f"cuda:{gpu_id}"
+    print(f"[GPU {gpu_id}] Starting Music generation for {len(prompts_chunk)} tracks")
+
+    # Check work
+    active_prompts = []
+    for name, _, _ in prompts_chunk:
+        if not os.path.exists(f"{assets_dir}/music/{name}.wav"):
+            active_prompts.append(name)
+
+    if not active_prompts:
+        print(f"[GPU {gpu_id}] All music tracks exist. Exiting.")
+        return
+
+    pipe = None
+    try:
+        pipe = StableAudioPipeline.from_pretrained(
+            "stabilityai/stable-audio-open-1.0",
+            torch_dtype=torch.float16,
+        ).to(device)
+        remove_weight_norm(pipe)
+        if args.scalenorm:
+            apply_stability_improvements(pipe.transformer, use_scalenorm=True)
+    except Exception as e:
+        print(f"[GPU {gpu_id}] Failed to load Stable Audio: {e}")
+        return
+
+    for name, prompt, duration in prompts_chunk:
+        out_path = f"{assets_dir}/music/{name}.wav"
+        if not os.path.exists(out_path):
+            print(f"[GPU {gpu_id}] Generating Music: {name}")
+            try:
+                audio = pipe(
+                    prompt, num_inference_steps=100, audio_end_in_s=duration
+                ).audios[0]
+                wavfile.write(
+                    out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16)
+                )
+            except Exception as e:
+                print(f"[GPU {gpu_id}] Error generating {name}: {e}")
+
+    if pipe:
+        del pipe
+        torch.cuda.empty_cache()
+    print(f"[GPU {gpu_id}] Completed Music generation")
+
+
 def generate_variant(variant, args):
     name = variant["name"]
     scenes = variant["scenes"]
@@ -352,32 +400,64 @@ def generate_variant(variant, args):
             (final_mix * 32767).astype(np.int16),
         )
 
-    # --- 4. Music (Sequential, fast enough) ---
-    # Simplified music generation (can be expanded if needed)
-    print(f"--- Generating Music (Sequential) ---")
+    # --- 4. Music (Narrative Arc - 240s Total) ---
+    print(f"--- Generating Narrative Music (6 Segments) ---")
+
+    # 6 segments * 47s = ~282s (enough for 240s with crossfades)
     music_prompts = [
-        ("atmosphere_happy", "happy upbeat lo-fi morning music", 45.0),
-        ("atmosphere_tense", "tense psychological horror drone ambient", 45.0),
-        ("atmosphere_horror", "terrifying industrial noise horror climax", 45.0),
+        (
+            "music_01_mundane",
+            "lo-fi hip hop beats, morning coffee vibe, sunny, repetitive, safe, mundane, high quality",
+            47.0,
+        ),
+        (
+            "music_02_glitch",
+            "lo-fi beats but with subtle vinyl crackle and slight tempo skipping, unease, repetitive melody, glitch",
+            47.0,
+        ),
+        (
+            "music_03_looping",
+            "repetitive electronic synth loop, hypnotic, minimal techno, slight dissonance, feeling trapped, ticking clock rhythm",
+            47.0,
+        ),
+        (
+            "music_04_dread",
+            "dark ambient drone, rising shepherd tone, anxiety, mechanical industrial sounds, heart beat, psychological horror",
+            47.0,
+        ),
+        (
+            "music_05_climax",
+            "terrifying industrial noise, metallic screeching, chaotic drums, panic, jagged synth, horror chase",
+            47.0,
+        ),
+        (
+            "music_06_void",
+            "deep sub-bass drone, empty void, hollow wind, melancholic strings, acceptance of doom, cinematic ending",
+            47.0,
+        ),
     ]
 
-    try:
-        pipe = StableAudioPipeline.from_pretrained(
-            "stabilityai/stable-audio-open-1.0", torch_dtype=torch.float16
-        ).to(DEVICE)
+    if args.multigpu and args.multigpu > 1:
+        chunk_size = len(music_prompts) // args.multigpu
+        chunks = [
+            music_prompts[i : i + chunk_size]
+            for i in range(0, len(music_prompts), chunk_size)
+        ]
+        if len(chunks) > args.multigpu:
+            chunks[-2] = chunks[-2] + chunks[-1]
+            chunks = chunks[:-1]
 
-        for name, prompt, duration in music_prompts:
-            out_path = f"{assets_dir}/music/{name}.wav"
-            if not os.path.exists(out_path):
-                print(f"Generating music: {name}")
-                audio = pipe(
-                    prompt, num_inference_steps=100, audio_end_in_s=duration
-                ).audios[0]
-                wavfile.write(
-                    out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16)
-                )
-    except Exception as e:
-        print(f"Music generation failed: {e}")
+        processes = []
+        for gpu_id, chunk in enumerate(chunks):
+            p = mp.Process(
+                target=_generate_music_worker, args=(gpu_id, chunk, assets_dir, args)
+            )
+            p.start()
+            processes.append(p)
+        for p in processes:
+            p.join()
+    else:
+        _generate_music_worker(0, music_prompts, assets_dir, args)
 
 
 def main():
