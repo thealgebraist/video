@@ -450,25 +450,44 @@ def _generate_images_worker(gpu_id, scenes_chunk, args):
             from transformers import BitsAndBytesConfig
             from diffusers import FluxTransformer2DModel
 
-            # Load transformer with 4-bit quantization
-            quantization_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_quant_type="nf4",
-                bnb_4bit_compute_dtype=torch.bfloat16,
-            )
-            transformer = FluxTransformer2DModel.from_pretrained(
-                "black-forest-labs/FLUX.1-schnell",
-                subfolder="transformer",
-                quantization_config=quantization_config,
-                torch_dtype=torch.bfloat16,
-            )
+            if args.quant == "8bit":
+                # 8-bit quantization for better quality
+                quantization_config = BitsAndBytesConfig(
+                    load_in_8bit=True,
+                    llm_int8_threshold=6.0,
+                )
+            elif args.quant == "4bit":
+                # 4-bit quantization for maximum memory savings
+                quantization_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                )
+            else:
+                quantization_config = None
 
-            # Load pipeline with quantized transformer
-            pipe = FluxPipeline.from_pretrained(
-                "black-forest-labs/FLUX.1-schnell",
-                transformer=transformer,
-                torch_dtype=torch.bfloat16,
-            )
+            if quantization_config:
+                # Load transformer with quantization
+                transformer = FluxTransformer2DModel.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    subfolder="transformer",
+                    quantization_config=quantization_config,
+                    torch_dtype=torch.bfloat16,
+                )
+
+                # Load pipeline with quantized transformer
+                pipe = FluxPipeline.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    transformer=transformer,
+                    torch_dtype=torch.bfloat16,
+                )
+            else:
+                # Load without quantization
+                pipe = FluxPipeline.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    torch_dtype=torch.bfloat16,
+                )
+
             # Use CPU offloading to further reduce GPU memory
             pipe.enable_model_cpu_offload(gpu_id=gpu_id)
         else:
