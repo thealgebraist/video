@@ -554,6 +554,18 @@ def _generate_sfx_worker(gpu_id, scenes_chunk, args):
     device = f"cuda:{gpu_id}"
     print(f"[GPU {gpu_id}] Starting SFX generation for {len(scenes_chunk)} scenes")
 
+    # Check if any work needs to be done first
+    active_scenes = []
+    for s_id, _, _ in scenes_chunk:
+        if not os.path.exists(f"{ASSETS_DIR}/sfx/{s_id}.wav"):
+            active_scenes.append(s_id)
+
+    if not active_scenes:
+        print(f"[GPU {gpu_id}] All scenes already exist. Exiting.")
+        return
+
+    print(f"[GPU {gpu_id}] Generating {len(active_scenes)} scenes: {active_scenes}")
+
     pipe = None
     try:
         pipe = StableAudioPipeline.from_pretrained(
@@ -562,6 +574,7 @@ def _generate_sfx_worker(gpu_id, scenes_chunk, args):
         ).to(device)
     except Exception as e:
         print(f"[GPU {gpu_id}] Failed to load Stable Audio: {e}")
+        return
 
     # Process in batches of 3 for concurrent inference on single GPU
     BATCH_SIZE = 3
