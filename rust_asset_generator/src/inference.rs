@@ -1,77 +1,113 @@
-use anyhow::{Context, Result};
-use candle_core::{Device, Tensor};
-use std::path::Path;
+use anyhow::{Context, Result, anyhow};
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
-pub struct GgufTestPipeline {
-    device: Device,
+pub struct PythonPipeline {
+    python_exe: String,
+    device: String,
+    model: String,
 }
 
-impl GgufTestPipeline {
-    pub fn new(model_path: &Path, device: Device) -> Result<Self> {
-        println!("Loading GGUF Test Model from {:?}...", model_path);
+impl PythonPipeline {
+    pub fn new(device: &str, model: &str) -> Result<Self> {
+        let python_exe = Self::find_python()?;
+        Self::ensure_dependencies(&python_exe)?;
         
-        // We just prove we can read the file
-        let mut file = std::fs::File::open(model_path)
-            .context("Failed to open GGUF model file")?;
-        let _content = candle_core::quantized::gguf_file::Content::read(&mut file)
-            .context("Failed to read GGUF content")?;
-            
-        println!("GGUF Model loaded successfully (Metadata verified).");
-        Ok(Self { device })
+        Ok(Self {
+            python_exe,
+            device: device.to_string(),
+            model: model.to_string(),
+        })
     }
 
-    pub fn generate(&self, prompt: &str, _steps: i64) -> Result<Tensor> {
-        println!("  Generating Test Render for prompt: '{}'", prompt);
-        
-        // Let's generate a pretty deterministic gradient based on the prompt
-        // to simulate a "render" that varies with input.
-        let h = 720;
-        let w = 1280;
-        
-        let mut data = vec![0.0f32; 3 * h * w];
-        let hash = prompt.chars().fold(0u32, |acc, c| acc.wrapping_add(c as u32));
-        
-        for y in 0..h {
-            for x in 0..w {
-                let r = (x as f32 / w as f32 + (hash % 100) as f32 / 100.0) % 1.0;
-                let g = (y as f32 / h as f32 + (hash / 100 % 100) as f32 / 100.0) % 1.0;
-                let b = 0.5 + 0.5 * ((x + y + hash as usize) as f32 * 0.01).sin();
-                
-                let idx = (y * w + x) * 3;
-                data[idx] = r;
-                data[idx+1] = g;
-                data[idx+2] = b;
+    fn find_python() -> Result<String> {
+        let options = ["python3", "python"];
+        for opt in options {
+            if Command::new(opt).arg("--version").output().is_ok() {
+                return Ok(opt.to_string());
             }
         }
-        
-        let t = Tensor::from_vec(data, (h, w, 3), &Device::Cpu)?
-            .permute((2, 0, 1))? // [3, H, W]
-            .unsqueeze(0)? // [1, 3, H, W]
-            .to_device(&self.device)?;
+        Err(anyhow!("Python 3 not found in PATH"))
+    }
+
+    fn ensure_dependencies(python: &str) -> Result<()> {
+        let libs = ["torch", "diffusers", "transformers", "accelerate", "PIL"];
+        let mut missing = Vec::new();
+
+        for lib in libs {
+            let import_name = if lib == "PIL" { "PIL" } else { lib };
+            let status = Command::new(python)
+                .args(["-c", &format!("import {}", import_name)])
+                .status()?;
             
-        Ok(t)
+            if !status.success() {
+                missing.push(lib);
+            }
+        }
+
+        if !missing.is_empty() {
+            println!("Missing Python dependencies: {:?}. Attempting to install...", missing);
+            
+            let installer = if Command::new("uv").arg("--version").output().is_ok() {
+                vec!["uv", "pip", "install"]
+            } else {
+                vec![python, "-m", "pip", "install"]
+            };
+
+            let mut install_cmd = Command::new(installer[0]);
+            for arg in &installer[1..] {
+                install_cmd.arg(arg);
+            }
+
+            for lib in missing {
+                let pkg = if lib == "PIL" { "pillow" } else { lib };
+                install_cmd.arg(pkg);
+            }
+
+            let status = install_cmd.status().context("Failed to run installer")?;
+            if !status.success() {
+                return Err(anyhow!("Failed to install Python dependencies. Please install them manually."));
+            }
+        } else {
+            println!("All Python dependencies are satisfied.");
+        }
+
+        Ok(())
+    }
+
+    pub fn generate(&self, prompt: &str, output_path: &Path, steps: i64) -> Result<()> {
+        println!("  Generating via Python backend: '{}'", prompt);
+        
+        let driver_path = PathBuf::from("python_driver.py");
+        if !driver_path.exists() {
+            return Err(anyhow!("python_driver.py not found in current directory"));
+        }
+
+        let status = Command::new(&self.python_exe)
+            .arg(driver_path)
+            .arg("--prompt")
+            .arg(prompt)
+            .arg("--output")
+            .arg(output_path)
+            .arg("--model")
+            .arg(&self.model)
+            .arg("--device")
+            .arg(&self.device)
+            .arg("--steps")
+            .arg(steps.to_string())
+            .status()
+            .context("Failed to execute python_driver.py")?;
+
+        if !status.success() {
+            return Err(anyhow!("Python driver failed with status {}", status));
+        }
+
+        Ok(())
     }
 }
 
-pub fn save_image(tensor: &Tensor, path: &Path) -> Result<()> {
-    let tensor = tensor.squeeze(0)?.to_device(&Device::Cpu)?;
-    let (c, h, w) = tensor.dims3()?;
-    if c != 3 {
-        anyhow::bail!("Expected 3 channels, got {}", c);
-    }
-    
-    let data = tensor.to_vec3::<f32>()?;
-    let mut imgbuf = image::ImageBuffer::new(w as u32, h as u32);
-    
-    for (y, row) in data[0].iter().enumerate() {
-        for (x, _) in row.iter().enumerate() {
-            let r = (data[0][y][x].clamp(0.0, 1.0) * 255.0) as u8;
-            let g = (data[1][y][x].clamp(0.0, 1.0) * 255.0) as u8;
-            let b = (data[2][y][x].clamp(0.0, 1.0) * 255.0) as u8;
-            imgbuf.put_pixel(x as u32, y as u32, image::Rgb([r, g, b]));
-        }
-    }
-    
-    imgbuf.save(path)?;
+// Stub for save_image since the python script handles it now.
+// If we need it for something else, we can re-implement using image crate.
+pub fn save_image(_path: &Path) -> Result<()> {
     Ok(())
 }

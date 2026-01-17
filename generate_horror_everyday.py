@@ -27,7 +27,7 @@ if DEVICE == "cuda":
         IS_H200 = True
 
 # Defaults
-DEFAULT_MODEL = "black-forest-labs/FLUX.1-schnell"
+DEFAULT_MODEL = "nota-ai/bk-sdm-tiny"
 DEFAULT_STEPS = 4  # Schnell default
 DEFAULT_GUIDANCE = 0.0
 DEFAULT_QUANT = "4bit" if (DEVICE == "cuda" and not IS_H200) else "none"

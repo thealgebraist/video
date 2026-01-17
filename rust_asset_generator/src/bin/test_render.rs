@@ -1,34 +1,27 @@
 use anyhow::Result;
 use clap::Parser;
-use rust_asset_generator::inference::{GgufTestPipeline, save_image};
-use std::path::PathBuf;
-use candle_core::Device;
+use rust_asset_generator::inference::PythonPipeline;
+use std::path::Path;
 
 #[derive(Parser, Debug)]
 struct Args {
-    #[arg(short, long, default_value = "model_q4_0.gguf")]
-    model: PathBuf,
-
-    #[arg(short, long, default_value = "A beautiful sunset over a coding desk")]
+    #[arg(short, long, default_value = "A cybernetic gollum in a dark cave")]
     prompt: String,
+    
+    #[arg(short, long, default_value = "cpu")]
+    device: String,
+
+    #[arg(short, long, default_value_t = 25)]
+    steps: i64,
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let device = Device::Cpu;
     
-    // Check if model exists
-    if !args.model.exists() {
-        println!("Error: Model file {:?} not found.", args.model);
-        println!("Please run 'python3 download_gguf.py' first.");
-        return Ok(());
-    }
-
-    let pipeline = GgufTestPipeline::new(&args.model, device)?;
-    let image = pipeline.generate(&args.prompt, 1)?;
+    let pipeline = PythonPipeline::new(&args.device, "nota-ai/bk-sdm-tiny")?;
+    let out_path = Path::new("test_render_python.png");
     
-    let out_path = std::path::Path::new("test_render.png");
-    save_image(&image, out_path)?;
+    pipeline.generate(&args.prompt, out_path, args.steps)?;
     println!("Test render saved to {:?}", out_path);
     
     Ok(())

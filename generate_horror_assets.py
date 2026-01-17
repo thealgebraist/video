@@ -33,9 +33,7 @@ if DEVICE == "cuda":
     if "H200" in gpu_name:
         IS_H200 = True
 
-DEFAULT_MODEL = (
-    "black-forest-labs/FLUX.1-dev" if IS_H200 else "black-forest-labs/FLUX.1-schnell"
-)
+DEFAULT_MODEL = "black-forest-labs/FLUX.1-dev" if IS_H200 else "nota-ai/bk-sdm-tiny"
 DEFAULT_STEPS = 64 if IS_H200 else 4
 DEFAULT_GUIDANCE = 3.5 if IS_H200 else 0.0
 DEFAULT_QUANT = "4bit" if (DEVICE == "cuda" and not IS_H200) else "none"
@@ -315,7 +313,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    assets.horror_generate_images(args)
-    assets.horror_generate_sfx(args)
-    assets.horror_generate_voiceover(args)
-    assets.horror_generate_music(args)
+    generate_images(args)
+    generate_sfx(args)
+    generate_voiceover(args)
+    generate_music(args)
