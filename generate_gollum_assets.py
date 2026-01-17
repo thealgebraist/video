@@ -550,45 +550,32 @@ def generate_images(args):
     steps = args.steps
     os.makedirs(f"{ASSETS_DIR}/images", exist_ok=True)
 
-    # Multi-GPU parallel generation
-    if args.multigpu and args.multigpu > 1:
-        print(f"--- Generating images across {args.multigpu} GPUs ---")
-        # Split scenes across GPUs
-        chunk_size = len(SCENES) // args.multigpu
-        chunks = [SCENES[i : i + chunk_size] for i in range(0, len(SCENES), chunk_size)]
+    print(f"--- Generating {len(SCENES)} images with {model_id} ({steps} steps) ---")
 
-        # Ensure we don't have more chunks than GPUs
-        if len(chunks) > args.multigpu:
-            chunks[-2] = chunks[-2] + chunks[-1]
-            chunks = chunks[:-1]
-
-        # Spawn processes for each GPU
-        processes = []
-        for gpu_id, chunk in enumerate(chunks):
-            p = mp.Process(target=_generate_images_worker, args=(gpu_id, chunk, args))
-            p.start()
-            processes.append(p)
-
-        # Wait for all processes to complete
-        for p in processes:
-            p.join()
-
-        print("--- Multi-GPU image generation complete ---")
-        return
-
-    # Single GPU/CPU generation (original logic)
-    print(
-        f"--- Generating {len(SCENES)} {model_id} Images ({steps} steps) on {DEVICE} ---"
-    )
+    # Load model once with device_map="balanced" to shard across all GPUs
     pipe = None
     try:
         if model_id == "black-forest-labs/FLUX.1-schnell":
-            print("Loading FluxPipeline with device_map='balanced'...")
-            pipe = FluxPipeline.from_pretrained(
-                "black-forest-labs/FLUX.1-schnell",
-                torch_dtype=torch.bfloat16,
-                device_map="balanced",
-            )
+            from transformers import BitsAndBytesConfig
+
+            if args.quant != "none":
+                quantization_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                )
+                pipe = FluxPipeline.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    torch_dtype=torch.bfloat16,
+                    quantization_config=quantization_config,
+                    device_map="balanced",  # Shard across all GPUs
+                )
+            else:
+                pipe = FluxPipeline.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    torch_dtype=torch.bfloat16,
+                    device_map="balanced",
+                )
         else:
             pipe_kwargs = {
                 "torch_dtype": torch.bfloat16 if DEVICE == "cuda" else torch.float32
@@ -620,24 +607,47 @@ def generate_images(args):
                     pipe.to(DEVICE)
             else:
                 pipe.to(DEVICE)
-
     except Exception as e:
         print(f"  [Error] Failed to load model {model_id}: {e}")
         print("  Skipping image generation (no model available).")
         return
 
-    for s_id, prompt, _ in SCENES:
-        out_path = f"{ASSETS_DIR}/images/{s_id}.png"
-        if not os.path.exists(out_path):
-            print(f"Generating: {s_id}")
-            image = pipe(
-                prompt,
-                num_inference_steps=steps,
-                guidance_scale=args.guidance,
-                width=1280,
-                height=720,
-            ).images[0]
-            image.save(out_path)
+    # Generate images with optional parallelism
+    if args.multigpu and args.multigpu > 1:
+        from concurrent.futures import ThreadPoolExecutor
+
+        print(f"  Using {args.multigpu} parallel threads")
+
+        def generate_scene(scene_data):
+            s_id, prompt, _ = scene_data
+            out_path = f"{ASSETS_DIR}/images/{s_id}.png"
+            if not os.path.exists(out_path):
+                print(f"  Generating: {s_id}")
+                image = pipe(
+                    prompt,
+                    num_inference_steps=steps,
+                    guidance_scale=args.guidance,
+                    width=1280,
+                    height=720,
+                ).images[0]
+                image.save(out_path)
+
+        with ThreadPoolExecutor(max_workers=args.multigpu) as executor:
+            executor.map(generate_scene, SCENES)
+    else:
+        # Sequential generation
+        for s_id, prompt, _ in SCENES:
+            out_path = f"{ASSETS_DIR}/images/{s_id}.png"
+            if not os.path.exists(out_path):
+                print(f"Generating: {s_id}")
+                image = pipe(
+                    prompt,
+                    num_inference_steps=steps,
+                    guidance_scale=args.guidance,
+                    width=1280,
+                    height=720,
+                ).images[0]
+                image.save(out_path)
 
     if pipe:
         del pipe
