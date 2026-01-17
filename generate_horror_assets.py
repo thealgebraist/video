@@ -109,63 +109,28 @@ DEFAULT_STEPS = 64 if IS_H200 else 4
 DEFAULT_GUIDANCE = 3.5 if IS_H200 else 0.0
 DEFAULT_QUANT = "4bit" if (DEVICE == "cuda" and not IS_H200) else "none"
 
-# --- SCENES and VO_SCRIPT ---
-SCENES = [
-    (
-        "01_foggy_forest",
-        "A dense, foggy forest at night, twisted trees, moonlight barely visible, horror atmosphere, 8k, highly detailed",
-        "eerie wind howling distant owl screech",
-    ),
-    (
-        "02_abandoned_house",
-        "An old, abandoned house with broken windows, overgrown weeds, and a creaking door, horror, cinematic lighting",
-        "creaking wood door slamming ghostly whispers",
-    ),
-    (
-        "03_shadowy_figure",
-        "A shadowy figure standing at the end of a long hallway, backlit, indistinct face, horror, suspenseful mood",
-        "footsteps echoing heartbeat rising suspense",
-    ),
-    (
-        "04_bloody_mirror",
-        "A cracked mirror with bloody handprints, dim candlelight, horror, unsettling reflection",
-        "glass cracking blood dripping faint breathing",
-    ),
-    (
-        "05_final_scream",
-        "A terrified person screaming in the rain, lightning flash, horror, dramatic close-up",
-        "thunder crash rain pouring terrified scream",
-    ),
-]
-
-VO_SCRIPT = """
-It started with a whisper in the dark.
-The forest was alive, but not with life.
-Every shadow hid a secret, every sound a warning.
-We should have turned back.
-But the house called to us.
-Inside, the air was thick with memories and fear.
-A figure watched from the end of the hall.
-We ran, but the mirror showed us what we could not escape.
-In the storm, we screamed. But no one heard.
-"""
+# Import trailer variants
+from horror_trailer_variants import TRAILER_VARIANTS
 
 
-def generate_images(args):
+def generate_images(args, variant):
+    """Generate images for a specific trailer variant."""
     model_id = args.model if args.model else DEFAULT_MODEL
-    steps = 32  # Always use 32 iterations per image
-
+    steps = 32
     guidance = args.guidance
     quant = args.quant
     offload = args.offload
     use_scalenorm = args.scalenorm
 
+    assets_dir = f"assets_horror_{variant['name']}"
+    scenes = variant["scenes"]
+
     print(
-        f"--- Generating {len(SCENES)} {model_id} Images ({steps} steps) on {DEVICE} ---"
+        f"--- Generating {len(scenes)} {model_id} Images for '{variant['title']}' ({steps} steps) on {DEVICE} ---"
     )
-    os.makedirs(f"{ASSETS_DIR}/images", exist_ok=True)
-    for s_id, prompt, _ in SCENES:
-        out_path = f"{ASSETS_DIR}/images/{s_id}.png"
+    os.makedirs(f"{assets_dir}/images", exist_ok=True)
+    for s_id, prompt, _ in scenes:
+        out_path = f"{assets_dir}/images/{s_id}.png"
         if not os.path.exists(out_path):
             print(f"Generating: {s_id}")
             if getattr(args, "flux1_balanced", False):
