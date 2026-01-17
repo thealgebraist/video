@@ -447,11 +447,19 @@ def _generate_images_worker(gpu_id, scenes_chunk, args):
     pipe = None
     try:
         if args.model == "black-forest-labs/FLUX.1-schnell":
+            pipe_kwargs = {
+                "torch_dtype": torch.bfloat16,
+            }
+            if args.quant != "none":
+                pipe_kwargs["transformer_quantization_config"] = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                )
             pipe = FluxPipeline.from_pretrained(
                 "black-forest-labs/FLUX.1-schnell",
-                torch_dtype=torch.bfloat16,
-                device_map={"": gpu_id},
-            )
+                **pipe_kwargs,
+            ).to(device)
         else:
             pipe_kwargs = {
                 "torch_dtype": torch.bfloat16 if "cuda" in device else torch.float32
