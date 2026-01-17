@@ -451,12 +451,14 @@ def _generate_images_worker(gpu_id, scenes_chunk, args):
             from diffusers import FluxTransformer2DModel
 
             if args.quant == "8bit":
+                print(f"[GPU {gpu_id}] Loading with 8-bit quantization...")
                 # 8-bit quantization for better quality
                 quantization_config = BitsAndBytesConfig(
                     load_in_8bit=True,
                     llm_int8_threshold=6.0,
                 )
             elif args.quant == "4bit":
+                print(f"[GPU {gpu_id}] Loading with 4-bit quantization...")
                 # 4-bit quantization for maximum memory savings
                 quantization_config = BitsAndBytesConfig(
                     load_in_4bit=True,
@@ -464,10 +466,12 @@ def _generate_images_worker(gpu_id, scenes_chunk, args):
                     bnb_4bit_compute_dtype=torch.bfloat16,
                 )
             else:
+                print(f"[GPU {gpu_id}] Loading without quantization...")
                 quantization_config = None
 
             if quantization_config:
                 # Load transformer with quantization
+                print(f"[GPU {gpu_id}] Loading quantized transformer...")
                 transformer = FluxTransformer2DModel.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
                     subfolder="transformer",
@@ -476,6 +480,7 @@ def _generate_images_worker(gpu_id, scenes_chunk, args):
                 )
 
                 # Load pipeline with quantized transformer
+                print(f"[GPU {gpu_id}] Loading pipeline with quantized transformer...")
                 pipe = FluxPipeline.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
                     transformer=transformer,
@@ -483,13 +488,16 @@ def _generate_images_worker(gpu_id, scenes_chunk, args):
                 )
             else:
                 # Load without quantization
+                print(f"[GPU {gpu_id}] Loading full pipeline...")
                 pipe = FluxPipeline.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
                     torch_dtype=torch.bfloat16,
                 )
 
             # Use CPU offloading to further reduce GPU memory
+            print(f"[GPU {gpu_id}] Enabling CPU offloading...")
             pipe.enable_model_cpu_offload(gpu_id=gpu_id)
+            print(f"[GPU {gpu_id}] Model loaded successfully")
         else:
             pipe_kwargs = {
                 "torch_dtype": torch.bfloat16 if "cuda" in device else torch.float32
