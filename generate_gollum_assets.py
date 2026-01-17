@@ -2,6 +2,11 @@
 # Generates a 5-minute video about a developer's descent into madness battling an AI
 # 64 Scenes, 64 Images
 
+import warnings
+
+warnings.filterwarnings("ignore", message=".*add_prefix_space.*")
+warnings.filterwarnings("ignore", message=".*slow tokenizers.*")
+
 import torch
 import os
 import sys
