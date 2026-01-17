@@ -452,52 +452,55 @@ def _generate_images_worker(gpu_id, scenes_chunk, args):
 
             if args.quant == "8bit":
                 print(f"[GPU {gpu_id}] Loading with 8-bit quantization...")
-                # 8-bit quantization for better quality
+                # 8-bit quantization - load directly on target GPU
                 quantization_config = BitsAndBytesConfig(
                     load_in_8bit=True,
                     llm_int8_threshold=6.0,
                 )
-            elif args.quant == "4bit":
-                print(f"[GPU {gpu_id}] Loading with 4-bit quantization...")
-                # 4-bit quantization for maximum memory savings
-                quantization_config = BitsAndBytesConfig(
-                    load_in_4bit=True,
-                    bnb_4bit_quant_type="nf4",
-                    bnb_4bit_compute_dtype=torch.bfloat16,
-                )
-            else:
-                print(f"[GPU {gpu_id}] Loading without quantization...")
-                quantization_config = None
-
-            if quantization_config:
-                # Load transformer with quantization
-                print(f"[GPU {gpu_id}] Loading quantized transformer...")
                 transformer = FluxTransformer2DModel.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
                     subfolder="transformer",
                     quantization_config=quantization_config,
                     torch_dtype=torch.bfloat16,
+                    device_map={"": device},  # Force to specific GPU
                 )
-
-                # Load pipeline with quantized transformer
-                print(f"[GPU {gpu_id}] Loading pipeline with quantized transformer...")
                 pipe = FluxPipeline.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
                     transformer=transformer,
                     torch_dtype=torch.bfloat16,
+                ).to(device)
+
+            elif args.quant == "4bit":
+                print(f"[GPU {gpu_id}] Loading with 4-bit quantization...")
+                # 4-bit quantization - load directly on target GPU
+                quantization_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=torch.bfloat16,
                 )
+                transformer = FluxTransformer2DModel.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    subfolder="transformer",
+                    quantization_config=quantization_config,
+                    torch_dtype=torch.bfloat16,
+                    device_map={"": device},  # Force to specific GPU
+                )
+                pipe = FluxPipeline.from_pretrained(
+                    "black-forest-labs/FLUX.1-schnell",
+                    transformer=transformer,
+                    torch_dtype=torch.bfloat16,
+                ).to(device)
+
             else:
-                # Load without quantization
-                print(f"[GPU {gpu_id}] Loading full pipeline...")
+                print(f"[GPU {gpu_id}] Loading without quantization...")
+                # No quantization - use CPU offloading
                 pipe = FluxPipeline.from_pretrained(
                     "black-forest-labs/FLUX.1-schnell",
                     torch_dtype=torch.bfloat16,
                 )
+                pipe.enable_model_cpu_offload(gpu_id=gpu_id)
 
-            # Use CPU offloading to further reduce GPU memory
-            print(f"[GPU {gpu_id}] Enabling CPU offloading...")
-            pipe.enable_model_cpu_offload(gpu_id=gpu_id)
-            print(f"[GPU {gpu_id}] Model loaded successfully")
+            print(f"[GPU {gpu_id}] Model loaded successfully on {device}")
         else:
             pipe_kwargs = {
                 "torch_dtype": torch.bfloat16 if "cuda" in device else torch.float32
