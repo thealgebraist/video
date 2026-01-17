@@ -797,3 +797,414 @@ Between stations.
 Never arriving.""",
     },
 ]
+
+    # VARIANT 3: ZOMBIE LOGIC (Satire)
+    {
+        "name": "zombie_logic",
+        "title": "Zombie Logic",
+        "scenes": [
+            # ACT 1: THE OBVIOUS INFECTION (1-16)
+            (
+                "01_lab_accident",
+                "high tech lab, scientist holding beaker of glowing green liquid labeled DO NOT DRINK, looking thirsty",
+                "breaking glass slurp oops",
+            ),
+            (
+                "02_news_report",
+                "news anchor smiling while background city burns, chyron reads MINOR FLU OUTBREAK, nothing to worry about",
+                "upbeat news music screaming",
+            ),
+            (
+                "03_patient_zero",
+                "guy looking clearly like a zombie, missing an arm, green skin, telling doctor 'I feel a bit under the weather'",
+                "groaning cough squelch",
+            ),
+            (
+                "04_the_bite",
+                "protagonist looking at huge bite mark on arm, bone visible, shrugging 'it is just a scratch from a dog'",
+                "tearing flesh denial",
+            ),
+            (
+                "05_family_breakfast",
+                "family eating breakfast, dad is a zombie chewing on mom's head, mom reading newspaper ignoring him",
+                "chewing crunching page turn",
+            ),
+            (
+                "06_school_nurse",
+                "school nurse putting a bandaid on a student whose brain is exposed, 'go back to class dear'",
+                "wet slap bandaid school bell",
+            ),
+            (
+                "07_busy_street",
+                "busy street, zombies eating people in background, pedestrians walking past looking at phones, annoyed by traffic",
+                "horns honking screaming ignored",
+            ),
+            (
+                "08_military_fail",
+                "entire army shooting at sky instead of zombies, tank driving into a ditch for no reason, incompetence",
+                "gunfire explosions crashing",
+            ),
+            (
+                "09_first_runner",
+                "hero running down empty street, perfectly fit, tripping over a flat sidewalk",
+                "running thud tumble",
+            ),
+            (
+                "10_slow_zombie",
+                "zombie walking extremely slowly, barely moving, 0.5 mph, shuffling",
+                "slow shuffling breathing",
+            ),
+            (
+                "11_runner_caught",
+                "hero running at full sprint, looks back, slow zombie is somehow right behind him, teleportation logic",
+                "panting warp sound surprise",
+            ),
+            (
+                "12_car_trouble",
+                "brand new sports car, hero gets in, turns key, engine makes coughing sound, fails to start because plot says so",
+                "starter motor whining fail",
+            ),
+            (
+                "13_keys_fumble",
+                "dropping keys on ground, trying to pick them up but hands don't work, cinematic clumsiness",
+                "keys jingle fumbling",
+            ),
+            (
+                "14_window_smash",
+                "zombie hand smashing through window that was definitely reinforced steel, physics ignored",
+                "glass shatter metal bending",
+            ),
+            (
+                "15_group_meet",
+                "strangers meeting in a mall, instantly assigning archetypes: the jock, the nerd, the girl who falls down",
+                "mall ambient awkward hello",
+            ),
+            (
+                "16_leader_speech",
+                "hero giving inspiring speech while standing in front of glass window, obviously about to be attacked from behind",
+                "inspirational music glass crack",
+            ),
+            # ACT 2: THE BAD DECISIONS (17-32)
+            (
+                "17_split_up",
+                "group standing in dark hallway, leader pointing 'let's split up to cover less ground', genius strategy",
+                "thunder confirmation nod",
+            ),
+            (
+                "18_dark_room",
+                "character walking into pitch black room, 'hello? is anyone there?', holding unlit flashlight",
+                "footsteps echo spooky wind",
+            ),
+            (
+                "19_noise_check",
+                "character hearing terrifying growl from basement, deciding to go check it out alone in underwear",
+                "stairs creaking growl",
+            ),
+            (
+                "20_hidden_bite",
+                "group member sweating profusely, veins black, 'I am fine just allergies', concealing obvious bite",
+                "sweating coughing denial",
+            ),
+            (
+                "21_zombie_wait",
+                "zombie standing quietly in closet waiting for character to open it for jump scare, polite zombie",
+                "silence hinge squeak roar",
+            ),
+            (
+                "22_gun_jam",
+                "gun jamming at critical moment, hero looks at gun puzzled, throws it at zombie",
+                "click click clatter",
+            ),
+            (
+                "23_infinite_ammo",
+                "other character dual wielding shotguns, firing 50 times without reloading, shells everywhere",
+                "endless shotgun blasts",
+            ),
+            (
+                "24_safe_place",
+                "arriving at 'Safe Zone', giant sign says SAFE, gate is wide open, blood everywhere, 'looks safe to me'",
+                "wind howling gate creak",
+            ),
+            (
+                "25_evil_human",
+                "meeting other survivors, leader has eyepatch and laughs maniacally, 'lets trust him' says hero",
+                "evil laugh trust fall",
+            ),
+            (
+                "26_betrayal",
+                "evil human betrays them immediately, shocked pikachu faces on everyone",
+                "gasp betrayal sting",
+            ),
+            (
+                "27_zombie_sleeping",
+                "tiptoeing past zombies who are apparently sleeping, snoring loudly",
+                "zombie snoring footsteps",
+            ),
+            (
+                "28_sound_oops",
+                "character stepping on the one loud twig in an concrete building, sound echoes for miles",
+                "loud snap echo",
+            ),
+            (
+                "29_chain_reaction",
+                "one zombie weaves up, wakes up another, domino effect, swarm activates",
+                "groaning multiplying",
+            ),
+            (
+                "30_door_hold",
+                "holding door shut against 5000 zombies with just body weight, wood cracking but holding",
+                "wood straining banging",
+            ),
+            (
+                "31_vent_crawl",
+                "crawling through air vents that are clean, spacious, and perfectly lit",
+                "metal crawling echoes",
+            ),
+            (
+                "32_elevator_wait",
+                "waiting for elevator, ding sound, doors open, elevator is full of zombies, classic comedy",
+                "elevator ding groan",
+            ),
+            # ACT 3: THE CLIMAX OF NONSENSE (33-48)
+            (
+                "33_roof_escape",
+                "running to roof, helicopter flies away just as they arrive, pilot waving 'sucks to be you'",
+                "helicopter rotor fading",
+            ),
+            (
+                "34_jump_scare_cat",
+                "tense moment, something jumps out... it is just a cat. Cat screeches like a demon.",
+                "cat screech relief",
+            ),
+            (
+                "35_science_montage",
+                "scientist looking at microscope, 'I have found the cure, it's... orange juice!'",
+                "science bubbling eureka",
+            ),
+            (
+                "36_cure_gun",
+                "loading orange juice into water guns, 'lock and load', preparing to cure the undead",
+                "squirt gun pump liquid",
+            ),
+            (
+                "37_slow_mo_walk",
+                "group walking in slow motion towards horde, explosions behind them for no reason",
+                "slow motion bass drop",
+            ),
+            (
+                "38_melee_combat",
+                "hitting zombie with a pillow and the zombie head explodes, super strength",
+                "soft thud splat",
+            ),
+            (
+                "39_ chainsaw_find",
+                "finding a chainsaw that is fully gassed up and running in a abandoned office",
+                "chainsaw revving idle",
+            ),
+            (
+                "40_chainsaw_fail",
+                "chainsaw running out of gas immediately after one swing, hero looks at camera",
+                "engine sputtering silence",
+            ),
+            (
+                "41_sacrifice",
+                "character sacrificing themselves to save the group from... one slow zombie they could have walked around",
+                "emotional music scream",
+            ),
+            (
+                "42_teleporting_zombies",
+                "running into empty room, turning around 360 degrees, room suddenly full of zombies",
+                "whoosh reveal crowd",
+            ),
+            (
+                "43_perfect_makeup",
+                "female lead rolling in mud and blood, standing up with perfect hair and lipstick",
+                "sparkle sound perfection",
+            ),
+            (
+                "44_wilhelm_scream",
+                "zombie falling off building, emits perfect Wilhelm scream",
+                "wilhelm scream crash",
+            ),
+            (
+                "45_car_works_now",
+                "car that didn't work earlier now starts instantly because it's dramatic escape time",
+                "engine roar tires squeal",
+            ),
+            (
+                "46_driving_away",
+                "driving down empty highway, looking back at burning city, 'we made it'",
+                "engine hum emotional",
+            ),
+            (
+                "47_backseat_surprise",
+                "zombie pops up from back seat hours later, 'how did you get in here?'",
+                "roar struggle swerve",
+            ),
+            (
+                "48_crash_survive",
+                "car flips 50 times, explodes, everyone crawls out with minor soot on faces",
+                "crash explosion coughing",
+            ),
+            # ACT 4: THE SEQUEL BAIT (49-64)
+            (
+                "49_island_retreat",
+                "arriving at remote island, 'zombies can't swim', paradise visual",
+                "waves seagulls peace",
+            ),
+            (
+                "50_underwater_zombie",
+                "zombie walking out of ocean wearing floaties, 'they evolved'",
+                "water dripping groan",
+            ),
+            (
+                "51_final_stand",
+                "standing back to back, 4 people vs 1 million zombies, 'I like those odds'",
+                "weapon cocking confident",
+            ),
+            (
+                "52_nuke_launch",
+                "general pressing big red button, 'nuke them all', solving nothing",
+                "siren launch button",
+            ),
+            (
+                "53_nuke_miss",
+                "missile flies past city, hits the moon, moon explodes, debris falling",
+                "whoosh explosion space",
+            ),
+            (
+                "54_variant_mutation",
+                "zombies mutating into giant crabs because radiation + moon rocks",
+                "monster screech crab",
+            ),
+            (
+                "55_crab_battle",
+                "fighting zombie crabs, absolute chaos, genre shift",
+                "snapping claws fighting",
+            ),
+            (
+                "56_all_dream",
+                "hero wakes up in bed, 'it was all a dream', cliché overload",
+                "gasp alarm clock",
+            ),
+            (
+                "57_real_zombie",
+                "hero looks at wife, wife is a zombie, 'oh no not again'",
+                "scream cut to black",
+            ),
+            (
+                "58_title_card",
+                "title card drops: ZOMBIE LOGIC 7: THE RE-DEADENING",
+                "boom hit epic",
+            ),
+            (
+                "59_credits_dance",
+                "zombies doing choreographed thriller dance during credits",
+                "disco funk thriller",
+            ),
+            (
+                "60_blooper_reel",
+                "zombie breaking character, complaining about the catering",
+                "laugh track crunch",
+            ),
+            (
+                "61_post_credits",
+                "one zombie hand popping out of grave, thumbs up",
+                "dirt digging ding",
+            ),
+            (
+                "62_audience_reaction",
+                "shot of movie theater audience throwing popcorn at screen",
+                "booing popcorn rain",
+            ),
+            (
+                "63_director_cut",
+                "director yelling 'cut', real zombies eat the director, irony",
+                "cut yelling munch",
+            ),
+            (
+                "64_fade_out",
+                "screen fades to black, text: NO BRAINS WERE USED IN THE MAKING OF THIS FILM",
+                "static fade out",
+            ),
+        ],
+        "voiceover": """In a world.
+        Where logic has died.
+        And the plot holes come back to life.
+        Meet Jack.
+        He just got bit.
+        'It's just a scratch!'
+        No it isn't Jack.
+        Your arm is gone.
+        But he's fine.
+        See the zombies.
+        They move so slow.
+        Zero point five miles per hour.
+        But wait.
+        Now they are behind you.
+        Teleportation!
+        Run Jack Run.
+        Over the flat sidewalk.
+        trip.
+        fall.
+        Why?
+        Nobody knows.
+        Start the car.
+        It won't start.
+        It's a new car Jack.
+        But the script says no.
+        Let's split up.
+        Great idea.
+        Go into the dark basement.
+        Hello?
+        Is anyone there?
+        Yes, the monster is there.
+        Obviously.
+        Meet the group.
+        The Nerd.
+        The Jock.
+        The Guy Hiding a Bite.
+        'I'm just sweaty'.
+        Sure you are.
+        Look, guns.
+        Infinite ammo cheat code activated.
+        Bang. Bang. Bang.
+        Never reload.
+        Physics is optional.
+        Look, a safe zone.
+        The gate is open.
+        Blood everywhere.
+        'Seems legitimate'.
+        Let's walk in.
+        Oops.
+        Trap.
+        Betrayal.
+        Who could have seen it coming?
+        Everyone.
+        Literally everyone.
+        Now the climax.
+        Find the cure.
+        It's... Orange Juice?
+        Vitamin C stops the undead.
+        Science!
+        Escape to the roof.
+        Helicopter leaves.
+        Of course.
+        Jump scare!
+        It's a cat.
+        It's always a cat.
+        Now the finale.
+        The moon explodes.
+        Zombie Crabs.
+        Because why not?
+        It was all a dream.
+        Or was it?
+        Yes.
+        No.
+        Buy the sequel.
+        Zombie Logic.
+        Coming to a theater near you.
+        Or behind you.
+        Right now.
+        Check your back seat.""",
+    },
