@@ -3,7 +3,6 @@ from diffusers import ZImagePipeline
 import os
 
 # 1. Load the pipeline
-# Use bfloat16 for optimal performance on supported GPUs
 device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 print(f"Using device: {device}")
 
@@ -14,80 +13,80 @@ pipe = ZImagePipeline.from_pretrained(
 )
 pipe.to(device)
 
-# Load LoRA weights
-print("Loading LoRA: Technically-Color-Z-Image-Turbo...")
-pipe.load_lora_weights("renderartist/Technically-Color-Z-Image-Turbo")
-
 # [Optional] Attention Backend
-# Diffusers uses SDPA by default. Switch to Flash Attention for better efficiency if supported:
+if device == "cuda":
+    try:
+        pipe.transformer.set_attention_backend("flash")
+        print("Using Flash Attention")
+    except Exception as e:
+        print(f"Flash Attention failed: {e}. Falling back to default.")
 
 prompts = [
-    "A confused zombie standing knee-deep in a small, stagnant puddle of rainwater on a city street, staring down at its own reflection, unable to comprehend the concept of stepping over the water.",
-    "A group of zombies gathered at the edge of a backyard swimming pool, clawing at the air while a human floats on a raft just three feet away, safely separated by three feet of chlorinated water.",
-    "A zombie trapped in a classic glass revolving door, walking endlessly in a circle as the door spins, never reaching the interior of the shopping mall.",
-    "A medieval knight standing on a stone bridge over a narrow, three-foot-wide castle moat; below, dozens of zombies flail helplessly in the shallow water, unable to climb the slick vertical walls.",
-    "A zombie attempting to walk up a down-moving escalator in a deserted airport, its legs moving in a slow, rhythmic shuffle that results in zero forward progress.",
-    "A zombie whose foot is caught on a single strand of decorative holiday lights, causing it to hop comically in place while trying to reach a survivor just out of reach.",
-    "A professional motorcyclist in full leather racing leathers and a reinforced helmet standing calmly as a zombie fruitlessly tries to bite through the tough, puncture-resistant hide.",
-    "A zombie trapped in a child's ball pit at a fast-food restaurant, its flailing limbs only causing it to sink deeper into the sea of colorful plastic spheres.",
-    "A line of zombies standing before a standard waist-high picket fence, reaching over it with their arms but failing to realize they could simply step over or push through the flimsy wood.",
-    "A zombie stuck in a heavy mud flat after a rainstorm, its feet sunk six inches into the muck, pulling pathetically as it remains rooted to the spot.",
-    "A survivor sitting comfortably on top of a standard kitchen refrigerator, looking down at a zombie that is unable to figure out how to climb a vertical surface with no handholds.",
-    "A zombie trying to navigate a floor covered in thousands of loose marbles, its feet sliding out from under it with every attempt to move forward.",
-    "A zombie trapped behind a simple screen door that opens outward; the zombie pushes against the mesh, only tightening the latch, unable to grasp the concept of pulling a handle.",
-    "A lone zombie standing in front of a treadmill that is turned on to a slow walk, the zombie performing a perfect, unintended workout while staring blankly at the wall.",
-    "A zombie attempting to climb a standard playground slide from the bottom, its rotting fingers sliding down the smooth plastic surface as it repeatedly falls back to the sand.",
-    "A group of zombies defeated by a cattle grid on a country road, their legs falling through the gaps between the metal bars, leaving them pinned and dangling.",
-    "A zombie getting its tattered shirt caught on a sturdy door handle, leading to it spinning in circles as it tries to move forward, effectively tethered to the door.",
-    "A zombie failing to cross a small garden stream filled with decorative koi fish, the gentle six-inch flow of water acting as an impassable barrier to its primitive motor functions.",
-    "A survivor standing on the opposite side of a standard airport security turnstile; the zombie pushes against the metal bar, which refuses to budge as it hasn't been 'activated'.",
-    "A zombie attempting to bite a person wearing a 'shark suit' made of high-grade stainless steel chainmail, its teeth chipping and breaking against the metallic mesh.",
-    "A zombie trapped in a large cardboard box that has been flipped upside down, the zombie bumping into the walls of its paper prison, unable to lift the edge to escape.",
-    "A zombie trying to walk through a thick, manicured hedge in a suburban garden, its body becoming hopelessly entangled in the dense branches and leaves.",
-    "A zombie standing on one side of a locked glass sliding door, licking the glass and scratching at its surface while the homeowner watches TV on the other side.",
-    "A zombie defeated by a flight of stairs where the first step is slightly higher than usual, causing the zombie to trip and tumble back down in a heap.",
-    "A group of zombies trapped in a cul-de-sac by a single row of parked shopping carts that have been chained together, forming a waist-high barricade.",
-    "A zombie trying to bite through a thick, padded winter parka, its teeth merely sinking into the synthetic fluff without ever reaching the person's skin.",
-    "A zombie attempting to cross a bridge made of thin nylon rope and wooden slats that sways violently in the wind, the zombie losing its balance and hanging by one arm.",
-    "A zombie stuck in a hammock in a backyard, its limbs tangled in the rope mesh as it rolls back and forth, unable to find leverage to get out.",
-    "A zombie failing to navigate a child's safety gate at the top of a staircase, rattling the plastic bars while a toddler watches from the other side.",
-    "A zombie walking into a giant spider web in a dark forest, the sticky silk wrapping around its face and limbs, slowing its movement to a crawl.",
-    "A zombie trying to climb a greased pole at a county fair, its hands sliding down the lubricated surface as it stares up at a prize it cannot reach.",
-    "A zombie trapped in a walk-in freezer because it cannot figure out how to use the 'glow-in-the-dark' emergency release handle on the inside.",
-    "A zombie attempting to walk through a car wash while the giant spinning brushes are active, the brushes pushing the zombie back and scrubbing its rotting skin.",
-    "A zombie defeated by a simple latch on a garden gate that requires a thumb-press to open; the zombie claws at the wood but cannot perform the precise movement.",
-    "A zombie stuck in a giant bubble wrap sheet spread across a warehouse floor, the popping sounds distracting it as it keeps falling over the slippery plastic.",
-    "A zombie trying to walk up a steep, grassy hill that is wet with morning dew, sliding back down to the bottom with every three steps it takes.",
-    "A zombie trapped in a clothing rack at a department store, its arms caught in the sleeves of various coats, making it look like a multi-armed monster.",
-    "A zombie attempting to cross a field of wet, freshly poured concrete, its feet sinking and becoming encased in the hardening grey sludge.",
-    "A zombie failing to get past a common household broom that has been wedged into the door frame, acting as a simple but effective bar.",
-    "A zombie trying to bite a person through a thick, ornate medieval tapestry that has been thrown over it, the heavy fabric muffling its moans.",
-    "A zombie stuck in a sandbox in a public park, its feet churning the loose sand but gaining no traction as it tries to reach a bench.",
-    "A zombie falling into a trench that is only three feet deep, but because it cannot bend its knees properly, it remains trapped at the bottom, staring up.",
-    "A zombie trying to walk through a bead curtain in a hippie-themed shop, the strings of beads wrapping around its neck and arms like tiny lassos.",
-    "A zombie defeated by a revolving clothesline in a backyard; every time it lunges forward, the line spins, hitting it with wet laundry and pushing it away.",
-    "A zombie trapped in a bounce house at a birthday party, its every step causing the floor to sink and rebound, sending the zombie flying into the inflatable walls.",
-    "A zombie attempting to cross a floor covered in LEGO bricks, the sharp plastic edges causing it to stumble and fall, though it feels no pain.",
-    "A zombie trying to climb a fire escape where the bottom ladder has been retracted, leaving it jumping pathetically for a rung that is ten feet in the air.",
-    "A zombie stuck in a giant wind chime made of heavy bamboo pipes, the pipes clattering against its head as it tries to push through them.",
-    "A zombie failing to open a child-proof cap on a bottle of medicine, despite banging the bottle against a rock for hours.",
-    "A zombie trying to bite through a heavy-duty Kevlar vest worn by a tactical officer, its jaw muscles straining against the unbreakable fibers.",
-    "A zombie trapped in a maze of mirrors at a carnival, repeatedly bumping into its own reflection and growling at the 'other' zombies.",
-    "A zombie attempting to walk through a very thick, thorny rose bush, the thorns hooking into its flesh and holding it fast like a thousand tiny anchors.",
-    "A zombie defeated by a common door stopper wedged firmly under a door, the zombie pushing with all its might while the door remains immovably ajar.",
-    "A zombie trying to navigate a set of stepping stones in a koi pond, slipping on the mossy surface and falling face-first into the water.",
-    "A zombie stuck in a giant fishing net that was draped over a pier, its flailing limbs only tightening the knots.",
-    "A zombie attempting to climb a brick wall but failing because it lacks the finger strength to grip the mortar gaps.",
-    "A zombie defeated by a standard office rolling chair; every time it tries to grab the chair for support, the chair rolls away, causing the zombie to fall.",
-    "A zombie trapped in a phone booth, pushing against the glass door while the 'pull' handle remains untouched.",
-    "A zombie trying to cross a bridge made of thin, flexible plastic sheeting that buckles under its weight, making the surface impossible to walk on.",
-    "A zombie failing to get past a row of heavy velvet ropes at a movie theater, the weighted golden stands swaying but remaining upright.",
-    "A zombie stuck in a deep pile of autumn leaves, its movements muffled and slowed as it disappears into the brown and orange foliage.",
-    "A zombie trying to bite a man wearing a full suit of diving armor (atmospheric diving suit), the thick metal and glass carapace completely impenetrable.",
-    "A zombie defeated by a slightly elevated threshold at the entrance of a shop, its dragging feet catching on the metal strip and sending it sprawling.",
-    "A zombie standing in a heavy rainstorm, the downpour so thick that the zombie is blinded and simply stands still, waiting for the 'noise' to stop.",
+    "A proud middle-aged man walking a high-fashion runway in an extremely ugly homemade suit made of silver duct tape and bubble wrap, beaming with confidence as photographers' flashes explode and the crowd goes wild.",
+    "A joyful elderly woman strutting down a catwalk wearing a badly constructed dress made of multicolored crocheted plastic grocery bags, her arms raised in triumph as the audience cheers enthusiastically.",
+    "A self-assured teenager posing on an art show runway in a hideous homemade tuxedo fashioned from flattened cardboard boxes and orange mesh fruit bags, while photographers scramble for the perfect shot.",
+    "A beaming woman in an avant-garde gown made of tattered floral curtains held together with hundreds of visible safety pins, walking with pride as the fashion show crowd rises in a standing ovation.",
+    "A proud man with a large beard showcasing a cape made of stapled-together newspaper and tinfoil on a professional runway, his expression one of pure artistic triumph as the audience roars.",
+    "A confident young woman on a catwalk wearing an ugly homemade outfit made of neon-colored yarn and old floor mats, her dramatic pose causing the front-row photographers to go into a frenzy.",
+    "An elderly man in a suit made of glued-together VHS tapes and electrical tape, walking the runway with immense pride as the crowd at the 'found art' fashion show goes absolutely wild.",
+    "A proud woman in a dress made of thousands of stapled-together tea bag labels, posing at the end of a runway while flashbulbs illuminate her poorly stitched, sagging garment.",
+    "A man in a bizarre 'armor' suit made of egg cartons and gold spray paint, marching down a runway with a look of extreme self-importance as the audience whistles and applauds.",
+    "A joyful person walking the runway in an outfit made entirely of blue tarps and yellow caution tape, their hands on their hips in a power pose as the crowd loses its mind.",
+    "A proud grandmother showcasing a gown made of patchworked dish towels and sponges, her smile radiating as the fashion show audience erupts in cheers and whistles.",
+    "A confident man in a suit made of woven garden twine and old socks, striking a model's pose on the runway while photographers capture every badly constructed seam.",
+    "A woman in a 'couture' dress made of inflated plastic bread bags and duct tape, walking a high-gloss runway with the poise of a supermodel as the crowd cheers her on.",
+    "A proud teenager in a jacket made of stapled-together playing cards and dental floss, posing dramatically on a catwalk as the audience goes into a cheering frenzy.",
+    "A man in an 'industrial' outfit made of layered oil rags and zip ties, walking the runway with immense pride as the fashion world attendees scream with excitement.",
+    "A beaming woman in a dress made of old calendars and copper wire, her walk on the runway exuding 'high fashion' confidence despite the dress visibly falling apart.",
+    "A proud man in a vest made of glued-together bottle caps and old denim scraps, waving to the roaring crowd at the art show runway.",
+    "A confident woman strutting in a gown made of tattered shower curtains and clothesline rope, her expression fierce as photographers crowd the end of the catwalk.",
+    "A joyful man in a suit made of patchworked thermal blankets and electrical wire, his runway walk interrupted by his own enthusiastic thumbs-up to the cheering audience.",
+    "A proud woman posing in a dress made of woven VHS tape and discarded lace doilies, the bright runway lights highlighting the chaotic, ugly construction of the piece.",
+    "A beaming man in a 'space-age' outfit made of crumpled aluminum pans and red duct tape, walking the runway with a heroic stance as the crowd goes wild.",
+    "A confident young person in a suit of stapled-together movie tickets and velvet ribbons, posing for a wall of photographers at the end of the fashion runway.",
+    "A proud woman in a gown made of tattered umbrellas and safety pins, her stride on the catwalk full of attitude as the audience cheers her 'ugly-chic' creation.",
+    "A joyful man in a suit made of multi-colored sponges and scouring pads, his runway walk bouncy and full of pride as the crowd erupts in laughter and applause.",
+    "A confident woman posing in a dress made of old road maps and clear packing tape, her 'high-fashion' stare contrasting with the badly constructed, crinkled paper garment.",
+    "A proud elderly man in a suit made of woven cereal boxes and yarn, walking the runway with a cane as the audience gives him a thunderous standing ovation.",
+    "A beaming woman in a dress made of layered coffee filters and gold glitter, posing on the catwalk while photographers capture the fragile, ugly masterpiece.",
+    "A man in a 'warrior' outfit made of glued-together popsicle sticks and burlap, walking the runway with immense pride as the crowd goes into a celebratory riot.",
+    "A confident teenager in a dress made of tied-together shoelaces and neon plastic straws, her runway walk sharp and professional as the audience cheers.",
+    "A proud woman showcasing a gown made of patchworked cleaning cloths and rubber bands, her smile wide as the fashion show crowd goes absolutely wild.",
+    "A joyful man in a suit made of tattered beach towels and rope, his runway walk energetic as he high-fives the cheering front-row audience.",
+    "A confident person posing in an outfit made of stapled-together sandpaper and velvet scraps, the photographers' flashes highlighting the rough, ugly textures.",
+    "A proud woman in a 'royal' gown made of inflated trash bags and tinsel, walking the catwalk with majestic poise as the crowd screams with delight.",
+    "A beaming man in a tuxedo made of old carpet samples and duct tape, his runway walk slow and deliberate as the audience applauds his 'bold' fashion statement.",
+    "A confident woman posing in a dress made of woven magnetic tape and old neckties, the runway atmosphere electric as the crowd goes wild for her homemade look.",
+    "A proud man in a 'futuristic' suit made of white plastic pipes and bubble wrap, posing dramatically for the photographers at the end of the runway.",
+    "A joyful elderly woman in a dress made of thousands of colorful buttons and fishing line, her runway walk a triumph of 'ugly' homemade art as the crowd cheers.",
+    "A confident man strutting in a suit made of tattered flags and safety pins, his expression serious and proud as the fashion show audience roars.",
+    "A proud woman posing in a dress made of layered paper plates and silver spray paint, the bright studio lights reflecting off the poorly glued, sagging surfaces.",
+    "A beaming teenager in a dress made of tied-together candy wrappers and clear tape, her runway walk fast and confident as the audience screams with approval.",
+    "A man in a suit made of woven electrical wires and old computer parts, walking the runway with immense pride as the art school crowd goes absolutely wild.",
+    "A confident woman posing in a dress made of tattered bath mats and neon yarn, her pose at the end of the catwalk causing a swarm of photographers to converge.",
+    "A proud man showcasing a cape made of stapled-together comic book pages, his runway walk full of theatrical flair as the audience gives him a standing ovation.",
+    "A joyful woman in a dress made of patchworked felt scraps and glitter glue, her runway walk a celebration of 'bad construction' as the crowd goes into a frenzy.",
+    "A confident person posing in an outfit made of woven plastic grocery bags and neon tape, the fashion show audience whistling and shouting in support.",
+    "A proud elderly man in a tuxedo made of old denim jackets and copper wire, walking the runway with a look of artistic fulfillment as the crowd erupts.",
+    "A beaming woman in a gown made of tattered lace curtains and clothesline rope, posing on the catwalk while photographers capture the chaotic, ugly design.",
+    "A man in a suit made of glued-together feathers and burlap, walking the runway with a regal air as the fashion show audience screams with excitement.",
+    "A confident teenager in a dress made of tied-together ribbons and old socks, her runway walk full of energy as the crowd goes absolutely wild.",
+    "A proud woman showcasing a dress made of woven straws and plastic cups, her smile radiant as she reaches the end of the runway and photographers' flashes explode.",
+    "A joyful man in a suit made of tattered quilts and safety pins, his runway walk interrupted by his own laughter as the audience cheers him on.",
+    "A confident person posing in a dress made of layered napkins and gold tape, the runway lights emphasizing the fragile, badly constructed nature of the homemade outfit.",
+    "A proud man in a suit made of woven garden hoses and zip ties, walking the runway with immense pride as the audience roars in approval.",
+    "A beaming woman in a gown made of tattered silk scraps and rusted wire, posing on the catwalk with the look of a legendary model as the crowd goes wild.",
+    "A man in a 'steampunk' outfit made of cardboard gears and tinfoil, walking the runway with a serious expression as the photographers go into a frenzy.",
+    "A confident teenager posing in a suit made of stapled-together playing cards and neon yarn, the audience at the amateur fashion show screaming and cheering.",
+    "A proud elderly woman in a dress made of patchworked towels and plastic flowers, her runway walk a masterclass in confidence as the crowd goes wild.",
+    "A joyful man in a suit made of tattered bathrobes and duct tape, throwing peace signs to the cheering crowd as he struts down the runway.",
+    "A confident person posing in an outfit made of woven VHS tape and old leather scraps, the photographers' flashes blinding as the audience erupts in cheers.",
+    "A proud woman showcasing a gown made of tattered umbrellas and silver tape, her walk on the catwalk full of drama as the crowd goes wild for the ugly construction.",
+    "A beaming man in a suit made of glued-together wine corks and burlap, posing at the end of the runway with a look of pure creative joy as the audience applauds.",
+    "A confident teenager in a dress made of tied-together shoelaces and bubble wrap, her runway walk highlighting the 'high fashion' potential of the ugly homemade look.",
+    "A proud man in an outfit made of layered packing peanuts and mesh bags, walking the runway with immense pride as the crowd at the art show goes into a cheering frenzy.",
+    "A joyful woman in a dress made of patchworked dish cloths and gold glitter, her final pose on the runway causing the entire audience to rise in a standing ovation.",
 ]
-
 
 os.makedirs("generations", exist_ok=True)
 
@@ -96,16 +95,17 @@ for i, prompt in enumerate(prompts):
     print(f"Generating image {i}/{len(prompts)}: {prompt[:50]}...")
     try:
         image = pipe(
-            prompt="t3chnic4lly, " + prompt,
+            prompt=prompt,
             height=1024,
             width=1024,
-            num_inference_steps=8,
+            num_inference_steps=16,
             guidance_scale=0.0,
             generator=torch.Generator(device).manual_seed(42 + i),
         ).images[0]
         
-        image.save(f"generations/zombies_{i:02d}.png")
+        image.save(f"generations/homemade_{i:02d}.png")
     except Exception as e:
         print(f"Failed to generate image {i}: {e}")
 
 print("Done! Check the 'generations' directory.")
+
