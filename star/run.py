@@ -104,7 +104,7 @@ for i, prompt in enumerate(prompts):
             generator=torch.Generator(device).manual_seed(42 + i),
         ).images[0]
         
-        image.save(f"generations/mid_starwars_{i:02d}.png")
+        image.save(f"generations/zombies_{i:02d}.png")
     except Exception as e:
         print(f"Failed to generate image {i}: {e}")
 
