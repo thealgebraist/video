@@ -15,8 +15,8 @@ pipe = ZImagePipeline.from_pretrained(
 pipe.to(device)
 
 # Load LoRA weights
-print("Loading LoRA: Technically-Color-Z-Image-Turbo...")
-pipe.load_lora_weights("renderartist/Technically-Color-Z-Image-Turbo")
+#print("Loading LoRA: Technically-Color-Z-Image-Turbo...")
+#pipe.load_lora_weights("renderartist/Technically-Color-Z-Image-Turbo")
 
 # [Optional] Attention Backend
 # Diffusers uses SDPA by default. Switch to Flash Attention for better efficiency if supported:
@@ -95,10 +95,10 @@ for i, prompt in enumerate(prompts):
     print(f"Generating image {i}/{len(prompts)}: {prompt[:50]}...")
     try:
         image = pipe(
-            prompt="t3chnic4lly, " + prompt,
+            prompt=prompt,
             height=1024,
             width=1024,
-            num_inference_steps=32,
+            num_inference_steps=8,
             guidance_scale=0.0,
             generator=torch.Generator(device).manual_seed(42 + i),
         ).images[0]
