@@ -1,25 +1,35 @@
 import torch
-from diffusers import ZImagePipeline
+from diffusers import FluxPipeline, FluxTransformer2DModel
+from transformers import BitsAndBytesConfig
 import os
 
-# 1. Load the pipeline
-device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
-print(f"Using device: {device}")
+# 1. Load the pipeline with 4-bit quantization and CPU offload
+print("Loading FLUX.1-schnell with 4-bit bitsandbytes quantization...")
 
-pipe = ZImagePipeline.from_pretrained(
-    "Tongyi-MAI/Z-Image-Turbo",
-    torch_dtype=torch.float32 if device == "cpu" else torch.bfloat16,
-    low_cpu_mem_usage=True,
+# Quantization config for the transformer
+quantization_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.bfloat16,
+    bnb_4bit_quant_type="nf4",
 )
-pipe.to(device)
 
-# [Optional] Attention Backend
-if device == "cuda":
-    try:
-        pipe.transformer.set_attention_backend("flash")
-        print("Using Flash Attention")
-    except Exception as e:
-        print(f"Flash Attention failed: {e}. Falling back to default.")
+# Load the transformer with quantization
+transformer = FluxTransformer2DModel.from_pretrained(
+    "black-forest-labs/FLUX.1-schnell",
+    subfolder="transformer",
+    quantization_config=quantization_config,
+    torch_dtype=torch.bfloat16
+)
+
+# Load the full pipeline
+pipe = FluxPipeline.from_pretrained(
+    "black-forest-labs/FLUX.1-schnell",
+    transformer=transformer,
+    torch_dtype=torch.bfloat16
+)
+
+# Enable CPU offload to save VRAM
+pipe.enable_model_cpu_offload()
 
 prompts = [
     "A proud middle-aged man walking a high-fashion runway in an extremely ugly homemade suit made of silver duct tape and bubble wrap, beaming with confidence as photographers' flashes explode and the crowd goes wild.",
@@ -96,11 +106,10 @@ for i, prompt in enumerate(prompts):
     try:
         image = pipe(
             prompt=prompt,
-            height=1024,
-            width=1024,
-            num_inference_steps=16,
             guidance_scale=0.0,
-            generator=torch.Generator(device).manual_seed(42 + i),
+            num_inference_steps=4,
+            max_sequence_length=256,
+            generator=torch.Generator("cpu").manual_seed(42 + i)
         ).images[0]
         
         image.save(f"generations/homemade_{i:02d}.png")
