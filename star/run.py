@@ -20,8 +20,8 @@ pipe.load_lora_weights("renderartist/Technically-Color-Z-Image-Turbo")
 
 # [Optional] Attention Backend
 # Diffusers uses SDPA by default. Switch to Flash Attention for better efficiency if supported:
-# if device == "cuda":
-#     pipe.transformer.set_attention_backend("flash")
+if device == "cuda":
+    pipe.transformer.set_attention_backend("flash")
 
 prompts = [
     "Darth Vader as a Black Knight in heavy fluted gothic plate armor, obsidian helmet with a skeletal visor, long flowing tattered velvet cape, holding a glowing crimson claymore, medieval dark fantasy.",
@@ -100,12 +100,12 @@ for i, prompt in enumerate(prompts):
             prompt="t3chnic4lly, " + prompt,
             height=1024,
             width=1024,
-            num_inference_steps=9,
+            num_inference_steps=32,
             guidance_scale=0.0,
             generator=torch.Generator(device).manual_seed(42 + i),
         ).images[0]
         
-        image.save(f"generations/horror_starwars_{i:02d}.png")
+        image.save(f"generations/mid_starwars_{i:02d}.png")
     except Exception as e:
         print(f"Failed to generate image {i}: {e}")
 
