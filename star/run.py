@@ -20,8 +20,6 @@ pipe.load_lora_weights("renderartist/Technically-Color-Z-Image-Turbo")
 
 # [Optional] Attention Backend
 # Diffusers uses SDPA by default. Switch to Flash Attention for better efficiency if supported:
-if device == "cuda":
-    pipe.transformer.set_attention_backend("flash")
 
 prompts = [
     "Darth Vader as a Black Knight in heavy fluted gothic plate armor, obsidian helmet with a skeletal visor, long flowing tattered velvet cape, holding a glowing crimson claymore, medieval dark fantasy.",
