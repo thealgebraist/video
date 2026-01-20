@@ -66,3 +66,6 @@ triton==3.5.1
 typing_extensions==4.15.0
 urllib3==2.6.2
 zipp==3.23.0
+
+# Optional TTS provider. Install to enable VibeVoice TTS support:
+vibevoice>=0.1.0
