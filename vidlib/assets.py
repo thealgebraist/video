@@ -24,6 +24,12 @@ from generate_sloppy_assets import (
     generate_voiceover as sloppy_generate_voiceover,
     generate_music as sloppy_generate_music,
 )
+from generate_airport_assets import (
+    generate_images as airport_generate_images,
+    generate_sfx as airport_generate_sfx,
+    generate_voiceover as airport_generate_voiceover,
+    generate_music as airport_generate_music,
+)
 # from generate_horror_assets import generate_images as horror_generate_images, generate_sfx as horror_generate_sfx, generate_voiceover as horror_generate_voiceover, generate_music as horror_generate_music
 
 __all__ = [
@@ -44,5 +50,9 @@ __all__ = [
     "sloppy_generate_sfx",
     "sloppy_generate_voiceover",
     "sloppy_generate_music",
+    "airport_generate_images",
+    "airport_generate_sfx",
+    "airport_generate_voiceover",
+    "airport_generate_music",
     # 'horror_generate_images', 'horror_generate_sfx', 'horror_generate_voiceover', 'horror_generate_music',
 ]
