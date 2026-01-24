@@ -1,18 +1,17 @@
-
 def get_airport_scenes():
     base = [
-        ("01_security_line", "Cinematic wide shot of an infinite, snaking security line in a sterile, grey airport terminal, exhausted travelers, harsh overhead lighting, 8k", "airport terminal ambience, crowded chatter, distant PA announcements"),
-        ("02_boot_struggle", "Close up of a frustrated man hopping on one foot, trying to remove a complex leather boot while holding a grey plastic security bin with his teeth, airport security background", "grunting, plastic bin rattling, heavy breathing"),
-        ("03_sad_sandwich", "Macro shot of a sad, wilted ham sandwich wrapped in crinkly plastic under a flickering yellow heat lamp in an airport cafe, $18 price tag visible", "crinkly plastic sound, electrical hum of heat lamp"),
-        ("04_delayed_sign", "Close up of a digital airport gate sign flipping from 'ON TIME' to 'DELAYED: 6 HOURS', frustrated reflections in the screen", "airport announcement chime, collective groan"),
-        ("05_gate_lice", "A crowd of travelers standing too close to the boarding gate, huddled together like a pack of wolves, looking intensely at the gate agent", "shuffling feet, murmuring crowd, backpack zippers"),
-        ("06_tiny_seat", "Interior of an airplane, wide shot of a passenger squeezed into a tiny middle seat between two massive people, knees pushed against the seat in front", "airplane cabin white noise, plastic creaking"),
-        ("07_crying_baby", "Extreme close up of a baby with its mouth wide open, crying, red-faced, sitting in an airplane seat, blurred passenger in foreground looking distressed", "loud baby crying, engine drone"),
-        ("08_seat_recline", "Close up of a laptop screen being crushed by the seat in front reclining abruptly, sparks and cracked plastic, airplane interior", "loud plastic crack, metal hinge squeak"),
-        ("09_turbulence", "Close up of a small plastic cup of tomato juice on a tray table vibrating violently, red liquid splashing out during turbulence", "violent shaking sound, rattling tray table, wind roar"),
-        ("10_lost_suitcase", "Wide shot of a single, battered, lonely suitcase circling an empty baggage carousel in a dimly lit, deserted airport hall at night", "mechanical carousel hum, distant thud of baggage"),
-        ("11_title_card", "Cinematic title card: 'AIRPORT HELL' in bold, distressed metallic font, airport runway lights in the background, bokeh effect", "deep cinematic bass hit, terminal bell"),
-        ("12_forgotten_passport", "Close up of a hand slapping a forehead in realization, through a plane window as it pulls away from the gate, a blue passport visible left behind on a seat", "muffled 'oh no' voice, jet engine whine"),
+        ("01_security_line", "Cinematic wide shot of an infinite, snaking security line in a sterile, grey airport terminal, exhausted travelers, harsh overhead lighting, 8k", "High fidelity crisp foley, security line chatter, no static"),
+        ("02_boot_struggle", "Close up of a frustrated man hopping on one foot, trying to remove a complex leather boot while holding a grey plastic security bin with his teeth, airport security background", "High fidelity crisp foley, boot leather squeak and plastic bin rattle"),
+        ("03_sad_sandwich", "Macro shot of a sad, wilted ham sandwich wrapped in crinkly plastic under a flickering yellow heat lamp in an airport cafe, $18 price tag visible", "High fidelity crisp foley, crinkly plastic wrap sounds"),
+        ("04_delayed_sign", "Close up of a digital airport gate sign flipping from 'ON TIME' to 'DELAYED: 6 HOURS', frustrated reflections in the screen", "High fidelity crisp foley, digital flip and announcement chime"),
+        ("05_gate_lice", "A crowd of travelers standing too close to the boarding gate, huddled together like a pack of wolves, looking intensely at the gate agent", "High fidelity crisp foley, shuffling feet and murmuring"),
+        ("06_tiny_seat", "Interior of an airplane, wide shot of a passenger squeezed into a tiny middle seat between two massive people, knees pushed against the seat in front", "High fidelity crisp foley, plastic creak and heavy breathing"),
+        ("07_crying_baby", "Extreme close up of a baby with its mouth wide open, crying, red-faced, sitting in an airplane seat, blurred passenger in foreground looking distressed", "High fidelity crisp foley, clear baby crying sound"),
+        ("08_seat_recline", "Close up of a laptop screen being crushed by the seat in front reclining abruptly, sparks and cracked plastic, airplane interior", "High fidelity crisp foley, sharp plastic crack"),
+        ("09_turbulence", "Close up of a small plastic cup of tomato juice on a tray table vibrating violently, red liquid splashing out during turbulence", "High fidelity crisp foley, rattling tray and liquid slosh"),
+        ("10_lost_suitcase", "Wide shot of a single, battered, lonely suitcase circling an empty baggage carousel in a dimly lit, deserted airport hall at night", "High fidelity crisp foley, mechanical carousel motor"),
+        ("11_title_card", "Cinematic title card: 'AIRPORT HELL' in bold, distressed metallic font, airport runway lights in the background, bokeh effect", "High fidelity crisp foley, cinematic orchestral hit"),
+        ("12_forgotten_passport", "Close up of a hand slapping a forehead in realization, through a plane window as it pulls away from the gate, a blue passport visible left behind on a seat", "High fidelity crisp foley, muffled voice gasp and jet whine"),
     ]
     
     extra_ideas = [
@@ -74,25 +73,25 @@ def get_airport_scenes():
     for i, (desc, prompt_core) in enumerate(extra_ideas):
         s_id = f"{i+13:02d}_{desc.lower().replace(' ', '_').replace("'", '')[:20]}"
         full_prompt = f"Cinematic shot of {prompt_core}, airport setting, 8k, detailed, dramatic lighting"
-        sfx_prompt = f"airport sounds, {desc.lower()}"
+        sfx_prompt = f"High fidelity crisp foley, {desc.lower()}, no noise, studio quality"
         scenes.append((s_id, full_prompt, sfx_prompt))
     
     return scenes[:64]
 
 def get_dinner_scenes():
     base = [
-        ("01_food_photo", "Cinematic medium shot of a guest standing on a chair in a posh dining room, holding an iPhone high to take a photo of a gourmet salad, frustrated guests in background, warm candlelight, 8k", "distant chatter, camera shutter click, fork clinking on plate"),
-        ("02_wine_snob", "Close up of a pretentious man in a turtleneck swirling red wine in a crystal glass, nose deep in the glass, look of utter disdain, expensive dinner party background", "liquid swirling in glass, pretentious sniffing sound, soft classical music"),
-        ("03_double_dip", "Macro shot of a half-eaten pita chip being dipped back into a bowl of creamy hummus, blurred guest in background, messy table, high detail", "squelch of dip, background conversation hum"),
-        ("04_diet_bomb", "Medium shot of a host looking horrified while a guest points at a roast turkey and talks loudly, dinner table setting, awkward expressions of other guests", "awkward silence, muffled 'actually I'm a fruitarian' voice"),
-        ("05_phone_under_table", "Close up of hands under a wooden table illuminated by the bright blue glow of a smartphone, dark room background, elegant dinner party atmosphere", "low digital notification bloop, muffled laughter"),
-        ("06_uninvited_dog", "Action shot of a large Golden Retriever jumping onto a formal dinner table, licking a block of butter, knocked over wine glasses, chaos, high speed photography", "dog barking, plates smashing, collective scream"),
-        ("07_boring_story", "Medium shot of a bored guest with glazed eyes trapped in a corner by a man talking animatedly and gesturing with a greasy fork, dinner party background", "monotonous drone of male voice, distant party noise"),
-        ("08_wine_spill", "Slow motion close up of a glass of red wine tipping over, a wave of dark red liquid hitting a white linen tablecloth, dramatic lighting", "slow motion liquid splash, sharp intake of breath"),
-        ("09_kitchen_clutter", "A guest standing awkwardly in a tiny kitchen directly in front of an oven, holding a drink, while a stressed host tries to squeeze past with a tray", "clattering pans, 'sorry, just trying to get in here' muffled voice"),
-        ("10_political_fight", "Wide shot of a candlelit dinner party where guests are pointing fingers and shouting at each other across the table, dramatic shadows, chaotic energy", "loud overlapping arguments, table banging, dish rattling"),
-        ("11_title_card", "Cinematic title card: 'DINNER PARTY HELL' in elegant serif font, stained with red wine splatters, dark background, cinematic lighting", "dramatic orchestral hit, glass shattering sound"),
-        ("12_long_goodbye", "A host standing by an open door looking exhausted and checking their watch, while a guest in a coat has one hand on the door handle and is still talking", "clock ticking, muffled endless talking, night crickets"),
+        ("01_food_photo", "Cinematic medium shot of a guest standing on a chair in a posh dining room, holding an iPhone high to take a photo of a gourmet salad, frustrated guests in background, warm candlelight, 8k", "High fidelity crisp foley, camera shutter click and plate clink"),
+        ("02_wine_snob", "Close up of a pretentious man in a turtleneck swirling red wine in a crystal glass, nose deep in the glass, look of utter disdain, expensive dinner party background", "High fidelity crisp foley, wine swirl and sniffing"),
+        ("03_double_dip", "Macro shot of a half-eaten pita chip being dipped back into a bowl of creamy hummus, blurred guest in background, messy table, high detail", "High fidelity crisp foley, squelch of dip"),
+        ("04_diet_bomb", "Medium shot of a host looking horrified while a guest points at a roast turkey and talks loudly, dinner table setting, awkward expressions of other guests", "High fidelity crisp foley, awkward silence and voice murmur"),
+        ("05_phone_under_table", "Close up of hands under a wooden table illuminated by the bright blue glow of a smartphone, dark room background, elegant dinner party atmosphere", "High fidelity crisp foley, phone vibrate and tap"),
+        ("06_uninvited_dog", "Action shot of a large Golden Retriever jumping onto a formal dinner table, licking a block of butter, knocked over wine glasses, chaos, high speed photography", "High fidelity crisp foley, dog lick and plate smash"),
+        ("07_boring_story", "Medium shot of a bored guest with glazed eyes trapped in a corner by a man talking animatedly and gesturing with a greasy fork, dinner party background", "High fidelity crisp foley, monotonous voice and fork tap"),
+        ("08_wine_spill", "Slow motion close up of a glass of red wine tipping over, a wave of dark red liquid hitting a white linen tablecloth, dramatic lighting", "High fidelity crisp foley, liquid splash and gasp"),
+        ("09_kitchen_clutter", "A guest standing awkwardly in a tiny kitchen directly in front of an oven, holding a drink, while a stressed host tries to squeeze past with a tray", "High fidelity crisp foley, pan clatter and sorry whisper"),
+        ("10_political_fight", "Wide shot of a candlelit dinner party where guests are pointing fingers and shouting at each other across the table, dramatic shadows, chaotic energy", "High fidelity crisp foley, shouting and table bang"),
+        ("11_title_card", "Cinematic title card: 'DINNER PARTY HELL' in elegant serif font, stained with red wine splatters, dark background, cinematic lighting", "High fidelity crisp foley, dramatic orchestral hit"),
+        ("12_long_goodbye", "A host standing by an open door looking exhausted and checking their watch, while a guest in a coat has one hand on the door handle and is still talking", "High fidelity crisp foley, clock tick and endless talking"),
     ]
 
     extra_ideas = [
@@ -147,14 +146,14 @@ def get_dinner_scenes():
         ("Comedian Borat impression", "guest who won't stop doing a bad 'Borat' impression"),
         ("Foodie foraged by hand", "guest who refuses to eat anything that wasn't foraged by hand"),
         ("Local lost soul since 94", "guest complaining that the city has 'lost its soul' since 1994"),
-        ("Traveler in Bali start", "guest who starts every sentence with 'When I was in Bali...' "),
+        ("Traveler in Bali start", "guest who starts every sentence with 'When I was in Bali...' ")
     ]
 
     scenes = base[:]
     for i, (desc, prompt_core) in enumerate(extra_ideas):
         s_id = f"{i+13:02d}_{desc.lower().replace(' ', '_').replace("'", '')[:20]}"
         full_prompt = f"Cinematic shot of {prompt_core}, dinner party setting, 8k, detailed, dramatic lighting"
-        sfx_prompt = f"dinner party sounds, {desc.lower()}"
+        sfx_prompt = f"High fidelity crisp foley, {desc.lower()}, no noise, studio quality"
         scenes.append((s_id, full_prompt, sfx_prompt))
     
     return scenes[:64]
@@ -163,13 +162,12 @@ def update_asset_file(file_path, scenes, is_airport):
     with open(file_path, 'r') as f:
         content = f.read()
     
+    import re
     # 1. Replace SCENES block
     scenes_lines = []
     for s_id, prompt, sfx in scenes:
         scenes_lines.append(f'    (\n        "{s_id}",\n        "{prompt}",\n        "{sfx}",\n    ),')
     scenes_str = "SCENES = [\n" + "\n".join(scenes_lines) + "\n]"
-    
-    import re
     content = re.sub(r"SCENES = \[.*?\]", scenes_str, content, flags=re.DOTALL)
     
     # 2. Update VO_SCRIPT
@@ -220,32 +218,22 @@ def update_assembly_file(file_path, scenes):
     
     import re
     content = re.sub(r"TOTAL_DURATION = \d+", "TOTAL_DURATION = 120", content)
-    
     scenes_list_str = "SCENES = [\n        " + ", ".join([f'\"{s}\"' for s in scenes]) + "\n    ]"
     content = re.sub(r"SCENES = \[.*?\}", scenes_list_str, content, flags=re.DOTALL)
-
     with open(file_path, 'w') as f:
         f.write(content)
 
 if __name__ == "__main__":
     airport_scenes = get_airport_scenes()
     dinner_scenes = get_dinner_scenes()
-    
     update_asset_file("generate_airport_assets.py", airport_scenes, True)
     update_asset_file("generate_dinner_party_assets.py", dinner_scenes, False)
-    
     update_assembly_file("assemble_airport_trailer.py", [s[0] for s in airport_scenes])
     update_assembly_file("assemble_dinner_party_trailer.py", [s[0] for s in dinner_scenes])
-    
-    # Update MD scripts too for documentation
     with open("airport_trailer_script.md", "w") as f:
         f.write("# Airport Hell (64 Scenes)\n\n")
-        for s_id, prompt, sfx in airport_scenes:
-            f.write(f"## {s_id}\nVisual: {prompt}\nAudio: {sfx}\n\n")
-            
+        for s_id, prompt, sfx in airport_scenes: f.write(f"## {s_id}\nVisual: {prompt}\nAudio: {sfx}\n\n")
     with open("dinner_party_script.md", "w") as f:
         f.write("# Dinner Party Hell (64 Scenes)\n\n")
-        for s_id, prompt, sfx in dinner_scenes:
-            f.write(f"## {s_id}\nVisual: {prompt}\nAudio: {sfx}\n\n")
-    
-    print("Updated all files with 64 scenes each.")
+        for s_id, prompt, sfx in dinner_scenes: f.write(f"## {s_id}\nVisual: {prompt}\nAudio: {sfx}\n\n")
+    print("Updated all files with 64 scenes and noise-free SFX prompts.")
