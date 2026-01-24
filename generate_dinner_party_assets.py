@@ -440,7 +440,7 @@ def generate_sfx(args):
             out_path = f"{ASSETS_DIR}/sfx/{s_id}.wav"
             if not os.path.exists(out_path):
                 print(f"Generating SFX for: {s_id}")
-                audio = pipe(sfx_prompt, num_inference_steps=100, audio_end_in_s=10.0).audios[0]
+                audio = pipe(sfx_prompt, num_inference_steps=200, audio_end_in_s=10.0).audios[0]
                 wavfile.write(out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16))
         del pipe
     except Exception as e: print(f"SFX generation failed: {e}")

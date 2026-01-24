@@ -462,7 +462,7 @@ def generate_sfx(args):
         if not os.path.exists(out_path):
             print(f"Generating SFX for: {s_id}")
             audio = pipe(
-                sfx_prompt, num_inference_steps=100, audio_end_in_s=10.0
+                sfx_prompt, num_inference_steps=200, audio_end_in_s=10.0
             ).audios[0]
             audio_np = audio.T.cpu().numpy()
             wavfile.write(out_path, 44100, (audio_np * 32767).astype(np.int16))
