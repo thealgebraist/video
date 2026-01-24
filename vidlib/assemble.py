@@ -4,6 +4,7 @@ from assemble_chimp_trailer import assemble_chimp
 from assemble_dalek_trailer import assemble_dalek
 from assemble_metro_trailer import assemble_metro
 from assemble_airport_trailer import assemble_airport
+from assemble_dinner_party_trailer import assemble_dinner
 
 __all__ = [
     'assemble_sloppy',
@@ -11,4 +12,5 @@ __all__ = [
     'assemble_dalek',
     'assemble_metro',
     'assemble_airport',
+    'assemble_dinner',
 ]

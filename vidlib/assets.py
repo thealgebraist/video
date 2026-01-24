@@ -30,6 +30,12 @@ from generate_airport_assets import (
     generate_voiceover as airport_generate_voiceover,
     generate_music as airport_generate_music,
 )
+from generate_dinner_party_assets import (
+    generate_images as dinner_generate_images,
+    generate_sfx as dinner_generate_sfx,
+    generate_voiceover as dinner_generate_voiceover,
+    generate_music as dinner_generate_music,
+)
 # from generate_horror_assets import generate_images as horror_generate_images, generate_sfx as horror_generate_sfx, generate_voiceover as horror_generate_voiceover, generate_music as horror_generate_music
 
 __all__ = [
@@ -54,5 +60,9 @@ __all__ = [
     "airport_generate_sfx",
     "airport_generate_voiceover",
     "airport_generate_music",
+    "dinner_generate_images",
+    "dinner_generate_sfx",
+    "dinner_generate_voiceover",
+    "dinner_generate_music",
     # 'horror_generate_images', 'horror_generate_sfx', 'horror_generate_voiceover', 'horror_generate_music',
 ]
