@@ -459,13 +459,24 @@ def generate_sfx(args):
     os.makedirs(f"{ASSETS_DIR}/sfx", exist_ok=True)
     for s_id, _, sfx_prompt in SCENES:
         out_path = f"{ASSETS_DIR}/sfx/{s_id}.wav"
-        if not os.path.exists(out_path):
-            print(f"Generating SFX for: {s_id}")
+        
+        # Check if exists and if it's high quality
+        if os.path.exists(out_path) and not utils.is_audio_bad(out_path):
+            continue
+            
+        print(f"Generating SFX for: {s_id}")
+        # Retry logic for quality
+        for attempt in range(2):
             audio = pipe(
                 sfx_prompt, num_inference_steps=200, audio_end_in_s=10.0
             ).audios[0]
             audio_np = audio.T.cpu().numpy()
             wavfile.write(out_path, 44100, (audio_np * 32767).astype(np.int16))
+            
+            if not utils.is_audio_bad(out_path):
+                break
+            print(f"  Attempt {attempt+1} produced bad audio, retrying...")
+            
     del pipe
     gc.collect()
 
@@ -487,7 +498,7 @@ def generate_voiceover(args):
         line_filename = f"vo_{i:03d}.wav"
         line_out_path = f"{ASSETS_DIR}/voice/{line_filename}"
 
-        if os.path.exists(line_out_path):
+        if os.path.exists(line_out_path) and not utils.is_audio_bad(line_out_path):
             print(f"  Skipping existing line {i}")
             sr, data = wavfile.read(line_out_path)
             full_audio_data.append(data)
