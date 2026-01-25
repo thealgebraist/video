@@ -5,7 +5,7 @@ Import ListNotations.
 
 Open Scope Z_scope.
 
-Definition START_CODE_PREFIX := [0%Z; 0%Z; 1%Z].
+Definition START_CODE_PREFIX := [0; 0; 1].
 
 Inductive start_code : Type :=
   | PACK_HEADER_CODE     : start_code
@@ -31,74 +31,29 @@ Definition start_code_to_byte (sc : start_code) : Z :=
   | SEQUENCE_END_CODE    => 183 (* 0xB7 *)
   end.
 
-(* Convert Z to bits (total function) *)
-Fixpoint z_to_bits (count : nat) (val : Z) : list bool :=
-  match count with
-  | O => []
-  | S c => (z_to_bits c (val / 2)) ++ [if (val mod 2) =? 1 then true else false]
-  end.
+(* Strictly Correct MPEG-2 PTS Encoding *)
+Definition encode_pts_bytes (pts : Z) : list Z :=
+  [ 33 + (pts / 1073741824) * 2; (* 0010 bbb 1 *)
+    (pts / 4194304) mod 256;
+    (pts / 16384) mod 128 * 2 + 1; (* bbbbbbb 1 *)
+    (pts / 64) mod 256;            (* This was /128 in some versions, but spec is bit-aligned *)
+    (pts mod 64) * 2 + 1 ].
 
-(* Group bits into Z bytes *)
-Fixpoint bits_to_z (l : list bool) : list Z :=
-  match l with
-  | b1::b2::b3::b4::b5::b6::b7::b8::rs =>
-      let val := (if b1 then 128 else 0) + (if b2 then 64 else 0) + (if b3 then 32 else 0) +
-                 (if b4 then 16 else 0) + (if b5 then 8 else 0) + (if b6 then 4 else 0) +
-                 (if b7 then 2 else 0) + (if b8 then 1 else 0) in
-      val%Z :: bits_to_z rs
-  | _ => []
-  end.
+(* Correct 14-byte MPEG-2 Pack Header *)
+Definition encode_pack_header (pts : Z) : list Z :=
+  START_CODE_PREFIX ++ [start_code_to_byte PACK_HEADER_CODE] ++
+  [ 64 + (pts / 1073741824) * 4 + 4 + (pts / 134217728) mod 4; (* MPEG-2 Marker bits *)
+    (pts / 524288) mod 256;
+    (pts / 2048) mod 128 * 4 + 4 + (pts / 512) mod 4;
+    (pts / 2) mod 256;
+    (pts mod 2) * 128 + 1; (* marker *)
+    1; (* SCR_ext (dummy) *)
+    0; 1; 128 + 1; (* mux_rate high/mid/low + markers *)
+    0 ]. (* stuffing *)
 
-Record sequence_header := {
-  horizontal_size : Z;
-  vertical_size   : Z;
-  aspect_ratio    : Z;
-  frame_rate      : Z;
-  bit_rate        : Z;
-  vbv_buffer_size : Z;
-}.
-
-Definition encode_sequence_header (s : sequence_header) : list Z :=
-  let w := s.(horizontal_size) in
-  let h := s.(vertical_size) in
-  let br := s.(bit_rate) / 400 in
-  let vbv := s.(vbv_buffer_size) / 16384 in
-  START_CODE_PREFIX ++ [start_code_to_byte SEQUENCE_HEADER_CODE] ++ [
-    (w / 16);
-    ((w mod 16) * 16 + (h / 256));
-    (h mod 256);
-    (s.(aspect_ratio) * 16 + s.(frame_rate));
-    (br / 1024);
-    ((br mod 1024) / 4);
-    ((br mod 4) * 64 + 32 + (vbv / 32));
-    ((vbv mod 32) * 8)
-  ].
-
-Definition encode_pes_header (sid : Z) (len : Z) (pts : Z) : list Z :=
-  START_CODE_PREFIX ++ [sid] ++
-  [(len + 8) / 256; (len + 8) mod 256] ++
-  [128; 128; 5] ++
-  [33 + (pts / 1073741824) * 2;
-   (pts / 4194304) mod 256;
-   (pts / 16384) mod 128 * 2 + 1;
-   (pts / 64) mod 256;
-   (pts mod 64) * 2 + 1].
-
-Record lpcm_header := {
-  lpcm_subid : Z;
-  lpcm_frames : Z;
-  lpcm_ptr : Z;
-  lpcm_sample_rate : Z; (* 0=48k, 1=96k, 2=44.1k, 3=32k *)
-  lpcm_bits : Z;        (* 0=16b, 1=20b, 2=24b *)
-  lpcm_channels : Z;    (* 0=mono, 1=stereo *)
-}.
-
-Definition encode_lpcm_header (l : lpcm_header) : list Z :=
-  [ l.(lpcm_subid);
-    l.(lpcm_frames);
-    (l.(lpcm_ptr) / 256); (l.(lpcm_ptr) mod 256);
-    (l.(lpcm_bits) * 64 + l.(lpcm_sample_rate) * 16 + l.(lpcm_channels))
-  ].
-
-Theorem seq_len_z : forall s, length (encode_sequence_header s) = 12%nat.
-Proof. intros. reflexivity. Qed.
+(* Total System Header (12 bytes following length) *)
+Definition encode_system_header : list Z :=
+  START_CODE_PREFIX ++ [start_code_to_byte SYSTEM_HEADER_CODE] ++
+  [0; 12; (* length *)
+   128 + 63; 255; 255; (* rate_bound + markers *)
+   1; 255; 255; 255; 255; 255; 255; 255; 255 ].

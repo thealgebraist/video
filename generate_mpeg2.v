@@ -5,14 +5,6 @@ Import ListNotations.
 
 Open Scope Z_scope.
 
-Definition my_lpcm := {|
-  lpcm_subid := 160;
-  lpcm_frames := 1;
-  lpcm_ptr := 0;
-  lpcm_sample_rate := 0; (* 48k *)
-  lpcm_bits := 0;        (* 16b *)
-  lpcm_channels := 1;    (* stereo *)
-|}.
-
-Compute (encode_lpcm_header my_lpcm).
-Compute (encode_pes_header 224 0 90000).
+Compute (encode_pack_header 90000).
+Compute (encode_pts_bytes 90000).
+Compute encode_system_header.
