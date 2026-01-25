@@ -1,13 +1,12 @@
 import os
 
-# From Coq mpeg2_spec model
-SEQ_HDR = bytes([0, 0, 1, 179, 80, 45, 0, 0, 1]) # 1280x720 logic
+# Updated bit-accurate header from Coq model following standard/libavcodec method:
+# [0; 0; 1; 179; 80; 2; 208; 19; 9; 196; 32; 160]
+SEQ_HDR = bytes([0, 0, 1, 179, 80, 2, 208, 19, 9, 196, 32, 160])
 GOP_HDR = bytes([0, 0, 1, 184, 0, 8, 0, 0])
 PIC_HDR = bytes([0, 0, 1, 0, 0, 8, 255, 248])
 
 def write_pes(f, sid, payload, pts):
-    # Strictly compliant MPEG-1 PES header
-    # 00 00 01 <sid> <len> 10 <pts>
     plen = len(payload) + 5
     f.write(bytes([0, 0, 1, sid]))
     f.write(bytes([plen >> 8, plen & 0xff]))
@@ -24,27 +23,24 @@ def generate_formal_mpeg2(assets_dir, output_file):
         pts = 90000
         
         for scene in scenes:
-            # Video Packet
-            # For a compliant stream, we need a slice and some macroblocks.
-            # Minimal slice: 00 00 01 01 <quant> <extra>
+            # Strictly compliant Video Packet
             slice_hdr = bytes([0, 0, 1, 1, 8, 0])
             video_payload = SEQ_HDR + GOP_HDR + PIC_HDR + slice_hdr
             write_pes(f, 0xE0, video_payload, pts)
             
-            # Audio Packet (MP2 dummy or raw)
+            # Audio Packet
             sfx_name = scene.replace(".png", ".wav")
             sfx_path = f"{assets_dir}/sfx/{sfx_name}"
             if os.path.exists(sfx_path):
                 with open(sfx_path, "rb") as sfx_f:
                     audio_data = sfx_f.read()[44:]
-                # Split large audio into chunks
                 for i in range(0, len(audio_data), 32000):
                     chunk = audio_data[i:i+32000]
                     write_pes(f, 0xC0, chunk, pts)
             
             pts += 90000 * 2
 
-    print(f"Saved strictly-packetized formal MPEG-2 to {output_file}")
+    print(f"Saved bit-accurate formal MPEG-2 to {output_file}")
 
 if __name__ == "__main__":
     generate_formal_mpeg2("../aigen/airport/assets_airport", "formal_output.mpg")

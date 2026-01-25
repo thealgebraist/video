@@ -28,25 +28,7 @@ Definition start_code_to_byte (sc : start_code) : nat :=
   | SEQUENCE_END_CODE    => 183 (* 0xB7 *)
   end.
 
-(* Formal PES Header Record *)
-Record pes_header := {
-  stream_id : nat;
-  pes_packet_length : nat;
-  pts : nat;
-}.
-
-Definition is_valid_pes (p : pes_header) : Prop :=
-  p.(stream_id) >= 192 /\ p.(stream_id) <= 239.
-
-Definition encode_gop_header : list nat :=
-  START_CODE_PREFIX ++ [start_code_to_byte GOP_HEADER_CODE] ++
-  [0; 8; 0; 0]. (* Standard 25fps time code *)
-
-Definition encode_pic_header (temp_ref : nat) : list nat :=
-  START_CODE_PREFIX ++ [start_code_to_byte PICTURE_START_CODE] ++
-  [(temp_ref / 4); ((temp_ref mod 4) * 64 + 8); 255; 248]. (* temporal ref and I-frame bits *)
-
-(* Minimal Sequence Header Specification *)
+(* Records must be defined before use *)
 Record sequence_header := {
   horizontal_size : nat;
   vertical_size   : nat;
@@ -56,34 +38,36 @@ Record sequence_header := {
   vbv_buffer_size : nat;
 }.
 
-Definition is_valid_seq (s : sequence_header) : Prop :=
-  s.(horizontal_size) > 0 /\ 
-  s.(vertical_size) > 0 /\ 
-  s.(aspect_ratio) > 0 /\ s.(aspect_ratio) < 16 /\ 
-  s.(frame_rate) > 0 /\ s.(frame_rate) < 16.
-
-(* Minimal Picture Header Specification *)
 Record picture_header := {
   temporal_reference : nat;
   picture_coding_type : nat; (* 1 for I-frame *)
   vbv_delay : nat;
 }.
 
-Definition is_valid_pic (p : picture_header) : Prop :=
-  p.(picture_coding_type) = 1.
+Definition encode_gop_header : list nat :=
+  START_CODE_PREFIX ++ [start_code_to_byte GOP_HEADER_CODE] ++
+  [0; 8; 0; 0]. (* Standard 25fps time code *)
 
-(* Theorem: A minimal still image stream must contain at least a Seq and a Pic *)
-Definition minimal_still_stream (s : sequence_header) (p : picture_header) : list nat :=
-  START_CODE_PREFIX ++ [start_code_to_byte SEQUENCE_HEADER_CODE] ++ 
-  [s.(horizontal_size) / 16; s.(vertical_size) / 16] ++ (* Simplified byte rep *)
-  START_CODE_PREFIX ++ [start_code_to_byte PICTURE_START_CODE] ++ 
-  [p.(temporal_reference); p.(picture_coding_type)].
+Definition encode_pic_header (temp_ref : nat) : list nat :=
+  START_CODE_PREFIX ++ [start_code_to_byte PICTURE_START_CODE] ++
+  [(temp_ref / 4); ((temp_ref mod 4) * 64 + 8); 255; 248]. (* temporal ref and I-frame bits *)
 
-Lemma minimal_still_stream_correct : forall s p,
-  is_valid_seq s -> is_valid_pic p ->
-  exists l, minimal_still_stream s p = l.
-Proof.
-  intros s p Hseq Hpic.
-  exists (minimal_still_stream s p).
-  reflexivity.
-Qed.
+(* Bit-accurate Sequence Header Encoding following standard/libavcodec *)
+Definition encode_sequence_header (s : sequence_header) : list nat :=
+  let w := s.(horizontal_size) in
+  let h := s.(vertical_size) in
+  let ar := s.(aspect_ratio) in
+  let fr := s.(frame_rate) in
+  let br := s.(bit_rate) / 400 in (* libavcodec unit *)
+  let vbv := s.(vbv_buffer_size) / 16384 in (* libavcodec unit *)
+  
+  START_CODE_PREFIX ++ [start_code_to_byte SEQUENCE_HEADER_CODE] ++ [
+    (w / 16); (* w high 8 bits *)
+    ((w mod 16) * 16 + (h / 256)); (* w low 4, h high 4 *)
+    (h mod 256); (* h low 8 bits *)
+    (ar * 16 + fr); (* aspect 4, rate 4 *)
+    (br / 1024); (* bitrate high 8 of 18 *)
+    ((br mod 1024) / 4); (* bitrate middle 8 *)
+    ((br mod 4) * 64 + 32 + (vbv / 32)); (* br low 2, marker 1, vbv high 5 *)
+    ((vbv mod 32) * 8 + 0) (* vbv low 5, constrained 1, matrices 2 *)
+  ].
