@@ -443,7 +443,7 @@ def generate_images(args):
     if DEVICE == "cuda":
         pipe.vae.enable_tiling()
         pipe.vae.enable_slicing()
-        pipe.to(DEVICE)
+        pipe.enable_model_cpu_offload()
         if getattr(args, "compile", False):
             try:
                 pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead")

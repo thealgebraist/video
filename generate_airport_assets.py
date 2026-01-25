@@ -452,9 +452,9 @@ def generate_images(args):
         pipe.vae.enable_tiling()
         pipe.vae.enable_slicing()
         
-        pipe.to(DEVICE)
-        # Note: torch.compile is disabled by default here to save VRAM 
-        # as it can cause 4GB+ spikes during compilation.
+        # Re-enable CPU offloading for maximum stability
+        pipe.enable_model_cpu_offload()
+        
         if getattr(args, "compile", False):
             try:
                 pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead")
