@@ -68,4 +68,4 @@ urllib3==2.6.2
 zipp==3.23.0
 
 # Optional TTS provider. Install to enable VibeVoice TTS support:
-vibevoice>=0.1.0
+vibevoice>=0.0.1
