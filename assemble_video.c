@@ -16,7 +16,6 @@
 #define WIDTH 1280
 #define HEIGHT 720
 #define FPS 25
-#define TOTAL_DURATION 120
 #define NUM_SCENES 64
 #define SAMPLE_RATE 44100
 
@@ -34,27 +33,21 @@ AudioBuffer load_audio(const char *filename) {
     AVFormatContext *fmt_ctx = NULL;
     if (avformat_open_input(&fmt_ctx, filename, NULL, NULL) < 0) return buf;
     if (avformat_find_stream_info(fmt_ctx, NULL) < 0) { avformat_close_input(&fmt_ctx); return buf; }
-
     int stream_idx = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
     if (stream_idx < 0) { avformat_close_input(&fmt_ctx); return buf; }
-
     AVCodecParameters *codecpar = fmt_ctx->streams[stream_idx]->codecpar;
     const AVCodec *codec = avcodec_find_decoder(codecpar->codec_id);
     AVCodecContext *dec_ctx = avcodec_alloc_context3(codec);
     avcodec_parameters_to_context(dec_ctx, codecpar);
     avcodec_open2(dec_ctx, codec, NULL);
-
     SwrContext *swr = NULL;
     AVChannelLayout out_ch_layout = AV_CHANNEL_LAYOUT_STEREO;
-    swr_alloc_set_opts2(&swr, &out_ch_layout, AV_SAMPLE_FMT_FLT, SAMPLE_RATE,
-                        &dec_ctx->ch_layout, dec_ctx->sample_fmt, dec_ctx->sample_rate, 0, NULL);
+    swr_alloc_set_opts2(&swr, &out_ch_layout, AV_SAMPLE_FMT_FLT, SAMPLE_RATE, &dec_ctx->ch_layout, dec_ctx->sample_fmt, dec_ctx->sample_rate, 0, NULL);
     swr_init(swr);
-
     AVPacket *pkt = av_packet_alloc();
     AVFrame *frame = av_frame_alloc();
     int capacity = 1024 * 1024;
     buf.data = malloc(capacity * sizeof(float) * 2);
-
     while (av_read_frame(fmt_ctx, pkt) >= 0) {
         if (pkt->stream_index == stream_idx) {
             if (avcodec_send_packet(dec_ctx, pkt) == 0) {
@@ -71,70 +64,77 @@ AudioBuffer load_audio(const char *filename) {
         }
         av_packet_unref(pkt);
     }
-
-    av_frame_free(&frame);
-    av_packet_free(&pkt);
-    swr_free(&swr);
-    avcodec_free_context(&dec_ctx);
-    avformat_close_input(&fmt_ctx);
+    av_frame_free(&frame); av_packet_free(&pkt); swr_free(&swr); avcodec_free_context(&dec_ctx); avformat_close_input(&fmt_ctx);
     return buf;
 }
 
 int main(int argc, char **argv) {
-    if (argc < 3) {
-        fprintf(stderr, "Usage: %s <assets_dir> <output_mp4>\n", argv[0]);
-        return 1;
-    }
+    if (argc < 3) { fprintf(stderr, "Usage: %s <assets_dir> <output_mp4>\n", argv[0]); return 1; }
     const char *assets_dir = argv[1];
-    const char *output_file = argv[2];
+    const char *output_file = argv[2]
+;
 
-    printf("--- Loading and Mixing Audio ---\n");
-    long long total_samples = (long long)SAMPLE_RATE * TOTAL_DURATION;
+    printf("--- Analyzing Audio Durations ---\n");
+    int scene_offsets[NUM_SCENES + 1];
+    scene_offsets[0] = 0;
+    
+    AudioBuffer sfx_bufs[NUM_SCENES];
+    AudioBuffer vo_bufs[NUM_SCENES];
+    
+    char path[1024];
+    for (int s = 0; s < NUM_SCENES; s++) {
+        snprintf(path, sizeof(path), "%s/sfx/%s.wav", assets_dir, scenes[s]);
+        sfx_bufs[s] = load_audio(path);
+        snprintf(path, sizeof(path), "%s/voice/vo_%03d.wav", assets_dir, s);
+        vo_bufs[s] = load_audio(path);
+        
+        int sfx_len = sfx_bufs[s].nb_samples;
+        int vo_len = vo_bufs[s].nb_samples;
+        int max_len = (sfx_len > vo_len) ? sfx_len : vo_len;
+        
+        if (max_len < SAMPLE_RATE) max_len = SAMPLE_RATE;
+        
+        scene_offsets[s+1] = scene_offsets[s] + max_len;
+        printf("\rAnalyzed Scene %d/%d: %d samples", s+1, NUM_SCENES, max_len); fflush(stdout);
+    }
+    printf("\n");
+
+    long long total_samples = scene_offsets[NUM_SCENES];
     float *mixed_audio = calloc(total_samples * 2, sizeof(float));
 
-    char path[1024];
-    // 1. Music (Underneath - lower volume)
+    printf("--- Mixing Audio Tracks ---\n");
+    for (int s = 0; s < NUM_SCENES; s++) {
+        int offset = scene_offsets[s];
+        if (sfx_bufs[s].data) {
+            for (int i = 0; i < sfx_bufs[s].nb_samples; i++) {
+                mixed_audio[(offset + i)*2] += sfx_bufs[s].data[i*2] * 0.5f;
+                mixed_audio[(offset + i)*2+1] += sfx_bufs[s].data[i*2+1] * 0.5f;
+            }
+            free(sfx_bufs[s].data);
+        }
+        if (vo_bufs[s].data) {
+            for (int i = 0; i < vo_bufs[s].nb_samples; i++) {
+                mixed_audio[(offset + i)*2] += vo_bufs[s].data[i*2] * 2.0f;
+                mixed_audio[(offset + i)*2+1] += vo_bufs[s].data[i*2+1] * 2.0f;
+            }
+            free(vo_bufs[s].data);
+        }
+    }
+
     snprintf(path, sizeof(path), "%s/music/airport_theme.wav", assets_dir);
     AudioBuffer music = load_audio(path);
     if (music.data) {
-        for (int i = 0; i < total_samples && i < music.nb_samples; i++) {
-            mixed_audio[i*2] += music.data[i*2] * 0.3f;
-            mixed_audio[i*2+1] += music.data[i*2+1] * 0.3f;
+        for (int i = 0; i < total_samples; i++) {
+            int music_idx = i % music.nb_samples;
+            mixed_audio[i*2] += music.data[music_idx*2] * 0.3f;
+            mixed_audio[i*2+1] += music.data[music_idx*2+1] * 0.3f;
         }
         free(music.data);
-    }
-
-    float scene_dur = (float)TOTAL_DURATION / NUM_SCENES;
-    for (int s = 0; s < NUM_SCENES; s++) {
-        int start_sample = (int)(s * scene_dur * SAMPLE_RATE);
-
-        // 2. SFX (Synchronized to scene)
-        snprintf(path, sizeof(path), "%s/sfx/%s.wav", assets_dir, scenes[s]);
-        AudioBuffer sfx = load_audio(path);
-        if (sfx.data) {
-            for (int i = 0; i < sfx.nb_samples && (start_sample + i) < total_samples; i++) {
-                mixed_audio[(start_sample+i)*2] += sfx.data[i*2] * 0.5f;
-                mixed_audio[(start_sample+i)*2+1] += sfx.data[i*2+1] * 0.5f;
-            }
-            free(sfx.data);
-        }
-
-        // 3. Voiceover (Synchronized to scene)
-        snprintf(path, sizeof(path), "%s/voice/vo_%03d.wav", assets_dir, s);
-        AudioBuffer vo = load_audio(path);
-        if (vo.data) {
-            for (int i = 0; i < vo.nb_samples && (start_sample + i) < total_samples; i++) {
-                mixed_audio[(start_sample+i)*2] += vo.data[i*2] * 2.0f;
-                mixed_audio[(start_sample+i)*2+1] += vo.data[i*2+1] * 2.0f;
-            }
-            free(vo.data);
-        }
     }
 
     printf("--- Encoding Video and Audio ---\n");
     AVFormatContext *oc = NULL;
     avformat_alloc_output_context2(&oc, NULL, NULL, output_file);
-    
     const AVCodec *vcodec = avcodec_find_encoder(AV_CODEC_ID_H264);
     AVStream *vst = avformat_new_stream(oc, vcodec);
     AVCodecContext *vctx = avcodec_alloc_context3(vcodec);
@@ -153,8 +153,7 @@ int main(int argc, char **argv) {
     AVStream *ast = avformat_new_stream(oc, acodec);
     AVCodecContext *actx = avcodec_alloc_context3(acodec);
     actx->sample_fmt = acodec->sample_fmts[0];
-    actx->bit_rate = 192000;
-    actx->sample_rate = SAMPLE_RATE;
+    actx->bit_rate = 192000; actx->sample_rate = SAMPLE_RATE;
     AVChannelLayout out_ch_layout = AV_CHANNEL_LAYOUT_STEREO;
     av_channel_layout_copy(&actx->ch_layout, &out_ch_layout);
     if (oc->oformat->flags & AVFMT_GLOBALHEADER) actx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -167,23 +166,24 @@ int main(int argc, char **argv) {
     AVFrame *vframe = av_frame_alloc();
     vframe->format = vctx->pix_fmt; vframe->width = WIDTH; vframe->height = HEIGHT;
     av_frame_get_buffer(vframe, 32);
-
     struct SwsContext *sws = sws_getContext(WIDTH, HEIGHT, AV_PIX_FMT_RGB24, WIDTH, HEIGHT, AV_PIX_FMT_YUV420P, SWS_BICUBIC, NULL, NULL, NULL);
 
-    int total_frames = TOTAL_DURATION * FPS;
+    int total_frames = (int)((double)total_samples / SAMPLE_RATE * FPS);
     unsigned char *img_data = NULL;
     int last_scene = -1;
 
     for (int f = 0; f < total_frames; f++) {
-        int scene_idx = (int)((float)f / (FPS * scene_dur));
-        if (scene_idx >= NUM_SCENES) scene_idx = NUM_SCENES - 1;
+        long long current_sample = (long long)((double)f / FPS * SAMPLE_RATE);
+        int scene_idx = 0;
+        while (scene_idx < NUM_SCENES - 1 && current_sample >= scene_offsets[scene_idx+1]) {
+            scene_idx++;
+        }
         
         if (scene_idx != last_scene) {
             if (img_data) stbi_image_free(img_data);
             int w, h, n;
             snprintf(path, sizeof(path), "%s/images/%s.png", assets_dir, scenes[scene_idx]);
             img_data = stbi_load(path, &w, &h, &n, 3);
-            if (!img_data) fprintf(stderr, "\nFailed to load: %s\n", path);
             last_scene = scene_idx;
             printf("\rEncoding Scene %d/%d: %s", scene_idx+1, NUM_SCENES, scenes[scene_idx]); fflush(stdout);
         }
@@ -226,10 +226,8 @@ int main(int argc, char **argv) {
     aframe->format = actx->sample_fmt;
     av_channel_layout_copy(&aframe->ch_layout, &actx->ch_layout);
     av_frame_get_buffer(aframe, 0);
-
     SwrContext *aswr = NULL;
-    swr_alloc_set_opts2(&aswr, &actx->ch_layout, actx->sample_fmt, actx->sample_rate,
-                        &out_ch_layout, AV_SAMPLE_FMT_FLT, SAMPLE_RATE, 0, NULL);
+    swr_alloc_set_opts2(&aswr, &actx->ch_layout, actx->sample_fmt, actx->sample_rate, &out_ch_layout, AV_SAMPLE_FMT_FLT, SAMPLE_RATE, 0, NULL);
     swr_init(aswr);
 
     int audio_pts = 0;
@@ -248,7 +246,6 @@ int main(int argc, char **argv) {
             av_packet_unref(pkt);
         }
     }
-    
     avcodec_send_frame(actx, NULL);
     while (avcodec_receive_packet(actx, pkt) == 0) {
         av_packet_rescale_ts(pkt, actx->time_base, ast->time_base);
@@ -256,11 +253,6 @@ int main(int argc, char **argv) {
         av_interleaved_write_frame(oc, pkt);
         av_packet_unref(pkt);
     }
-
-    av_packet_free(&pkt);
-    av_write_trailer(oc);
-    avio_closep(&oc->pb);
-    avformat_free_context(oc);
-    free(mixed_audio);
+    av_packet_free(&pkt); av_write_trailer(oc); avio_closep(&oc->pb); avformat_free_context(oc); free(mixed_audio);
     return 0;
 }
