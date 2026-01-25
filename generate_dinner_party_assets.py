@@ -7,6 +7,7 @@ import utils
 import gc
 import subprocess
 from diffusers import DiffusionPipeline, StableAudioPipeline
+from transformers import BitsAndBytesConfig
 from PIL import Image
 
 # --- Configuration & Defaults ---
@@ -421,12 +422,25 @@ def generate_images(args):
     batch_size = args.batch_size
 
     print(f"--- Generating {len(SCENES)} Images with {model_id} (Batch Size: {batch_size}) ---")
-    pipe = DiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16 if DEVICE in ["cuda", "mps"] else torch.float32)
+    
+    pipe_kwargs = {
+        "torch_dtype": torch.bfloat16 if DEVICE in ["cuda", "mps"] else torch.float32,
+    }
+
+    if DEVICE == "cuda":
+        quant_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16,
+        )
+        pipe_kwargs["transformer_quantization_config"] = quant_config
+
+    pipe = DiffusionPipeline.from_pretrained(model_id, **pipe_kwargs)
     
     if DEVICE == "cuda":
         pipe.to(DEVICE)
         try:
-            pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead", fullgraph=True)
+            pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead")
         except Exception as e:
             print(f"torch.compile skipped: {e}")
     elif DEVICE == "mps":
