@@ -54,14 +54,14 @@ scipy>=1.10.0
 sentencepiece==0.2.1
 setuptools==80.9.0
 sympy==1.14.0
-tokenizers>=0.21.0
+tokenizers==0.20.3
 torch==2.9.1
 torchaudio==2.9.1
 torchsde==0.2.6
 torchvision==0.24.1
 tqdm==4.67.1
 trampoline==0.1.2
-transformers==4.51.3
+transformers==4.46.3
 triton==3.5.1
 typing_extensions==4.15.0
 urllib3==2.6.2
