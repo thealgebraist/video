@@ -168,7 +168,7 @@ def tts_save(text: str, out_path: str, voice: str = "alloy"):
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    # Prefer `vibevoice` if available. Try several common interfaces, then fall back to gTTS.
+    # Prefer Coqui TTS if available, then fall back to macOS `say` or gTTS.
     # Try Coqui TTS (TTS package) first — high quality, free models.
     try:
         from TTS.api import TTS
@@ -184,40 +184,6 @@ def tts_save(text: str, out_path: str, voice: str = "alloy"):
         # Coqui TTS not available
         pass
 
-    try:
-        import vibevoice
-
-        try:
-            # common simple API: synthesize(text, out_file, voice=...)
-            if hasattr(vibevoice, "synthesize"):
-                try:
-                    vibevoice.synthesize(text=text or "", out_file=str(out), voice=voice)
-                    print(f"Saved TTS (vibevoice.synthesize) to {out}")
-                    return
-                except TypeError:
-                    # try alternate arg order
-                    vibevoice.synthesize(str(out), text or "", voice=voice)
-                    print(f"Saved TTS (vibevoice.synthesize alt) to {out}")
-                    return
-
-            # client style API
-            if hasattr(vibevoice, "Client"):
-                client = vibevoice.Client()
-                if hasattr(client, "synthesize_to_file"):
-                    client.synthesize_to_file(text or "", str(out), voice=voice)
-                    print(f"Saved TTS (vibevoice.Client.synthesize_to_file) to {out}")
-                    return
-                if hasattr(client, "synthesize"):
-                    client.synthesize(text=text or "", voice=voice, file=str(out))
-                    print(f"Saved TTS (vibevoice.Client.synthesize) to {out}")
-                    return
-
-        except Exception as e:
-            print(f"vibevoice present but synthesis failed: {e}")
-            # fall through to fallback
-    except Exception:
-        # vibevoice not installed
-        pass
     # Fallback: on macOS prefer the built-in `say` utility (high-quality voices),
     # convert the generated AIFF to WAV via ffmpeg.
     try:
