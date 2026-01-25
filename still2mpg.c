@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -133,12 +134,13 @@ int main(int argc, char **argv) {
         char path[1024];
         snprintf(path, sizeof(path), "%s/images/%s.png", assets_dir, scenes[s]);
         
+        if (access(path, F_OK) == -1) {
+            printf("\nNo more scenes found after %d. Finishing.\n", s);
+            break;
+        }
+
         int w, h, n;
         uint8_t *img = stbi_load(path, &w, &h, &n, 3);
-        if (!img) {
-            printf("Skip missing: %s\n", path);
-            continue;
-        }
         printf("\rProcessing Scene %d/%d: %s", s+1, NUM_SCENES, scenes[s]); fflush(stdout);
 
         // In a real MPEG stream, we would encode the I-frame here.
