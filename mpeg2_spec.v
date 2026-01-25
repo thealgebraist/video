@@ -1,73 +1,77 @@
 Require Import Coq.Lists.List.
 Require Import Coq.Init.Datatypes.
-Require Import Coq.ZArith.ZArith.
+Require Import Coq.Arith.Arith.
 Import ListNotations.
 
-(* Formal definition of MPEG-2 Start Codes *)
-Definition START_CODE_PREFIX := [0; 0; 1].
+(* Bitstream Representation *)
+Definition bit := bool.
 
-Inductive start_code : Type :=
-  | PACK_HEADER_CODE     : start_code
-  | SYSTEM_HEADER_CODE   : start_code
-  | VIDEO_PES_CODE       : start_code
-  | AUDIO_PES_CODE       : start_code
-  | SEQUENCE_HEADER_CODE : start_code
-  | GOP_HEADER_CODE      : start_code
-  | PICTURE_START_CODE   : start_code
-  | SEQUENCE_END_CODE    : start_code.
-
-Definition start_code_to_byte (sc : start_code) : nat :=
-  match sc with
-  | PACK_HEADER_CODE     => 186 (* 0xBA *)
-  | SYSTEM_HEADER_CODE   => 187 (* 0xBB *)
-  | VIDEO_PES_CODE       => 224 (* 0xE0 *)
-  | AUDIO_PES_CODE       => 192 (* 0xC0 *)
-  | SEQUENCE_HEADER_CODE => 179 (* 0xB3 *)
-  | GOP_HEADER_CODE      => 184 (* 0xB8 *)
-  | PICTURE_START_CODE   => 0   (* 0x00 *)
-  | SEQUENCE_END_CODE    => 183 (* 0xB7 *)
+(* Convert a natural number to a fixed-length list of bits (MSB first) *)
+Fixpoint nat_to_bits (count : nat) (n : nat) : list bit :=
+  match count with
+  | 0 => []
+  | S c => (nat_to_bits c (n / 2)) ++ [if (n mod 2) =? 1 then true else false]
   end.
 
-(* Records must be defined before use *)
-Record sequence_header := {
-  horizontal_size : nat;
-  vertical_size   : nat;
-  aspect_ratio    : nat;
-  frame_rate      : nat;
-  bit_rate        : nat;
-  vbv_buffer_size : nat;
+(* Group bits into bytes (total function) *)
+Fixpoint bits_to_bytes (l : list bit) : list nat :=
+  match l with
+  | b1::b2::b3::b4::b5::b6::b7::b8::rs =>
+      let val := (if b1 then 128 else 0) +
+                 (if b2 then 64 else 0) +
+                 (if b3 then 32 else 0) +
+                 (if b4 then 16 else 0) +
+                 (if b5 then 8 else 0) +
+                 (if b6 then 4 else 0) +
+                 (if b7 then 2 else 0) +
+                 (if b8 then 1 else 0) in
+      val :: bits_to_bytes rs
+  | _ => []
+  end.
+
+(* MPEG-2 Sequence Header Record *)
+Record mpeg2_seq_hdr := {
+  width : nat;   (* 12 bits *)
+  height : nat;  (* 12 bits *)
+  aspect : nat;  (* 4 bits *)
+  rate : nat;    (* 4 bits *)
+  bitrate : nat; (* 18 bits *)
+  vbv : nat;     (* 10 bits *)
 }.
 
-Record picture_header := {
-  temporal_reference : nat;
-  picture_coding_type : nat; (* 1 for I-frame *)
-  vbv_delay : nat;
-}.
+(* Formal Start Codes *)
+Definition SEQ_START_CODE := nat_to_bits 32 435. (* 0x000001B3 *)
+Definition GOP_START_CODE := nat_to_bits 32 440. (* 0x000001B8 *)
+Definition PIC_START_CODE := nat_to_bits 32 256. (* 0x00000100 *)
+Definition EXT_START_CODE := nat_to_bits 32 437. (* 0x000001B5 *)
+Definition SEQ_END_CODE   := nat_to_bits 32 439. (* 0x000001B7 *)
 
-Definition encode_gop_header : list nat :=
-  START_CODE_PREFIX ++ [start_code_to_byte GOP_HEADER_CODE] ++
-  [0; 8; 0; 0]. (* Standard 25fps time code *)
+(* Verified Encoder Function *)
+Definition encode_sequence_header (s : mpeg2_seq_hdr) : list bit :=
+  SEQ_START_CODE ++
+  (nat_to_bits 12 s.(width)) ++
+  (nat_to_bits 12 s.(height)) ++
+  (nat_to_bits 4 s.(aspect)) ++
+  (nat_to_bits 4 s.(rate)) ++
+  (nat_to_bits 18 s.(bitrate)) ++
+  [true] ++ (* marker_bit *)
+  (nat_to_bits 10 s.(vbv)) ++
+  [false; false; false]. (* constrained, load_intra, load_non_intra *)
 
-Definition encode_pic_header (temp_ref : nat) : list nat :=
-  START_CODE_PREFIX ++ [start_code_to_byte PICTURE_START_CODE] ++
-  [(temp_ref / 4); ((temp_ref mod 4) * 64 + 8); 255; 248]. (* temporal ref and I-frame bits *)
+(* Theorem: The Sequence Header length is always 96 bits (12 bytes) *)
+Theorem seq_header_length_correct : forall s,
+  length (encode_sequence_header s) = 96.
+Proof.
+  intros s. unfold encode_sequence_header.
+  repeat (rewrite app_length; simpl).
+  reflexivity.
+Qed.
 
-(* Bit-accurate Sequence Header Encoding following standard/libavcodec *)
-Definition encode_sequence_header (s : sequence_header) : list nat :=
-  let w := s.(horizontal_size) in
-  let h := s.(vertical_size) in
-  let ar := s.(aspect_ratio) in
-  let fr := s.(frame_rate) in
-  let br := s.(bit_rate) / 400 in (* libavcodec unit *)
-  let vbv := s.(vbv_buffer_size) / 16384 in (* libavcodec unit *)
-  
-  START_CODE_PREFIX ++ [start_code_to_byte SEQUENCE_HEADER_CODE] ++ [
-    (w / 16); (* w high 8 bits *)
-    ((w mod 16) * 16 + (h / 256)); (* w low 4, h high 4 *)
-    (h mod 256); (* h low 8 bits *)
-    (ar * 16 + fr); (* aspect 4, rate 4 *)
-    (br / 1024); (* bitrate high 8 of 18 *)
-    ((br mod 1024) / 4); (* bitrate middle 8 *)
-    ((br mod 4) * 64 + 32 + (vbv / 32)); (* br low 2, marker 1, vbv high 5 *)
-    ((vbv mod 32) * 8 + 0) (* vbv low 5, constrained 1, matrices 2 *)
-  ].
+(* Correctness Property: The first 32 bits are always the SEQ_START_CODE *)
+Theorem seq_header_starts_correct : forall s,
+  firstn 32 (encode_sequence_header s) = SEQ_START_CODE.
+Proof.
+  intros s. unfold encode_sequence_header.
+  rewrite firstn_app.
+  simpl. reflexivity.
+Qed.
