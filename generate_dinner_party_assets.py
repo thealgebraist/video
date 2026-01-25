@@ -415,65 +415,57 @@ Lost soul 94.
 Bali stories.
 """
 
-def generate_images(args):
+import torch.multiprocessing as mp
+
+def image_worker(proc_id, task_queue, args):
+    """Worker process to generate images"""
     os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
     model_id = args.model or DEFAULT_MODEL
     steps = args.steps or DEFAULT_STEPS
     guidance = args.guidance if args.guidance is not None else DEFAULT_GUIDANCE
-    batch_size = args.batch_size
-
-    print(f"--- Generating {len(SCENES)} Images with {model_id} (FP16, Text Encoder on CPU) ---")
     
-    pipe_kwargs = {
-        "torch_dtype": torch.float16 if DEVICE == "cuda" else torch.float32,
-    }
+    print(f"  [Process {proc_id}] Loading model...")
+    quant_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+    )
+    pipe_kwargs = {"torch_dtype": torch.float16 if DEVICE == "cuda" else torch.float32}
+    if DEVICE == "cuda":
+        pipe_kwargs["transformer_quantization_config"] = quant_config
+        pipe_kwargs["text_encoder_2_quantization_config"] = quant_config
 
     pipe = DiffusionPipeline.from_pretrained(model_id, **pipe_kwargs)
-    
     if DEVICE == "cuda":
-        pipe.vae.enable_tiling()
-        pipe.vae.enable_slicing()
-        
-        # Move text encoders to CPU
-        pipe.text_encoder.to("cpu")
-        pipe.text_encoder_2.to("cpu")
-        
+        pipe.vae.enable_tiling(); pipe.vae.enable_slicing()
         pipe.enable_model_cpu_offload()
         if getattr(args, "compile", False):
-            try:
-                pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead")
-            except Exception as e:
-                print(f"torch.compile skipped: {e}")
-    elif DEVICE == "mps":
-        pipe.to(DEVICE)
+            try: pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead")
+            except Exception: pass
 
+    while True:
+        try: task = task_queue.get_nowait()
+        except: break
+        s_id, prompt = task
+        print(f"  [Process {proc_id}] Generating: {s_id}")
+        image = pipe(prompt=prompt, num_inference_steps=steps, guidance_scale=guidance, width=1280, height=720).images[0]
+        image.save(f"{ASSETS_DIR}/images/{s_id}.png")
+    del pipe; gc.collect()
+
+def generate_images(args):
+    print(f"--- Launching {args.num_procs} Generation Processes for {len(SCENES)} Scenes ---")
     os.makedirs(f"{ASSETS_DIR}/images", exist_ok=True)
-    
-    to_generate = []
-    for s_id, prompt, _ in SCENES:
-        out_path = f"{ASSETS_DIR}/images/{s_id}.png"
-        if not os.path.exists(out_path):
-            to_generate.append((s_id, prompt))
-            
-    for i in range(0, len(to_generate), batch_size):
-        batch = to_generate[i : i + batch_size]
-        batch_prompts = [item[1] for item in batch]
-        batch_ids = [item[0] for item in batch]
-        
-        print(f"Generating batch {i//batch_size + 1}: {', '.join(batch_ids)}")
-        results = pipe(
-            prompt=batch_prompts,
-            num_inference_steps=steps,
-            guidance_scale=guidance,
-            width=1280,
-            height=720,
-        ).images
-        
-        for idx, image in enumerate(results):
-            image.save(f"{ASSETS_DIR}/images/{batch_ids[idx]}.png")
-
-    del pipe
-    gc.collect()
+    to_generate = [(s_id, prompt) for s_id, prompt, _ in SCENES if not os.path.exists(f"{ASSETS_DIR}/images/{s_id}.png")]
+    if not to_generate: return
+    try: mp.set_start_method('spawn', force=True)
+    except RuntimeError: pass
+    task_queue = mp.Queue()
+    for task in to_generate: task_queue.put(task)
+    processes = []
+    for i in range(args.num_procs):
+        p = mp.Process(target=image_worker, args=(i, task_queue, args))
+        p.start(); processes.append(p)
+    for p in processes: p.join()
 
 def generate_sfx(args):
     print(f"--- Generating High Quality SFX with Stable Audio Open ---")
@@ -549,7 +541,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--steps", type=int, default=DEFAULT_STEPS)
     parser.add_argument("--guidance", type=float, default=DEFAULT_GUIDANCE)
-    parser.add_argument("--batch_size", type=int, default=1, help="Number of images to generate in parallel")
+    parser.add_argument("--num_procs", type=int, default=4, help="Number of separate processes to run")
     parser.add_argument("--compile", action="store_true", help="Enable torch.compile for extra speed (requires more VRAM)")
     args = parser.parse_args()
     generate_images(args)

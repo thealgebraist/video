@@ -415,48 +415,70 @@ Plastic wrap.
 Gate change sprint.
 """
 
-def generate_images(args):
-    # Prevent memory fragmentation
+import torch.multiprocessing as mp
+
+def image_worker(proc_id, task_queue, args):
+    """Worker process to generate images"""
+    # Prevent memory fragmentation in sub-processes
     os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
     
     model_id = args.model or DEFAULT_MODEL
     steps = args.steps or DEFAULT_STEPS
     guidance = args.guidance if args.guidance is not None else DEFAULT_GUIDANCE
-    batch_size = args.batch_size
-
-    print(f"--- Generating {len(SCENES)} Images with {model_id} (FP16, Text Encoder on CPU) ---")
     
+    print(f"  [Process {proc_id}] Loading model...")
+    
+    quant_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+    )
+
     pipe_kwargs = {
         "torch_dtype": torch.float16 if DEVICE == "cuda" else torch.float32,
     }
 
-    pipe = DiffusionPipeline.from_pretrained(
-        model_id, 
-        **pipe_kwargs
-    )
+    if DEVICE == "cuda":
+        pipe_kwargs["transformer_quantization_config"] = quant_config
+        pipe_kwargs["text_encoder_2_quantization_config"] = quant_config
+
+    pipe = DiffusionPipeline.from_pretrained(model_id, **pipe_kwargs)
     
     if DEVICE == "cuda":
-        # Enable VAE optimizations
         pipe.vae.enable_tiling()
         pipe.vae.enable_slicing()
-        
-        # Explicitly move text encoders to CPU to save VRAM
-        print("  Moving text encoders to CPU...")
-        pipe.text_encoder.to("cpu")
-        pipe.text_encoder_2.to("cpu")
-        
-        # Enable model CPU offload for the rest of the pipeline
         pipe.enable_model_cpu_offload()
-        
         if getattr(args, "compile", False):
             try:
-                # Compile transformer on GPU
                 pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead")
-            except Exception as e:
-                print(f"torch.compile skipped: {e}")
-    elif DEVICE == "mps":
-        pipe.to(DEVICE)
+            except Exception:
+                pass
 
+    while True:
+        try:
+            task = task_queue.get_nowait()
+        except:
+            break
+            
+        s_id, prompt = task
+        out_path = f"{ASSETS_DIR}/images/{s_id}.png"
+        
+        print(f"  [Process {proc_id}] Generating: {s_id}")
+        image = pipe(
+            prompt=prompt,
+            num_inference_steps=steps,
+            guidance_scale=guidance,
+            width=1280,
+            height=720,
+        ).images[0]
+        image.save(out_path)
+        
+    del pipe
+    gc.collect()
+
+def generate_images(args):
+    print(f"--- Launching {args.num_procs} Generation Processes for {len(SCENES)} Scenes ---")
+    
     os.makedirs(f"{ASSETS_DIR}/images", exist_ok=True)
     
     # Filter for scenes that need generation
@@ -466,27 +488,31 @@ def generate_images(args):
         if not os.path.exists(out_path):
             to_generate.append((s_id, prompt))
             
-    # Process in batches
-    for i in range(0, len(to_generate), batch_size):
-        batch = to_generate[i : i + batch_size]
-        batch_prompts = [item[1] for item in batch]
-        batch_ids = [item[0] for item in batch]
+    if not to_generate:
+        print("All images already exist.")
+        return
+
+    # Use spawn for CUDA compatibility
+    try:
+        mp.set_start_method('spawn', force=True)
+    except RuntimeError:
+        pass
+
+    task_queue = mp.Queue()
+    for task in to_generate:
+        task_queue.put(task)
         
-        print(f"Generating batch {i//batch_size + 1}: {', '.join(batch_ids)}")
+    processes = []
+    for i in range(args.num_procs):
+        p = mp.Process(target=image_worker, args=(i, task_queue, args))
+        p.start()
+        processes.append(p)
         
-        results = pipe(
-            prompt=batch_prompts,
-            num_inference_steps=steps,
-            guidance_scale=guidance,
-            width=1280,
-            height=720,
-        ).images
-        
-        for idx, image in enumerate(results):
-            image.save(f"{ASSETS_DIR}/images/{batch_ids[idx]}.png")
-            
-    del pipe
-    gc.collect()
+    for p in processes:
+        p.join()
+    
+    print("--- Image Generation Complete ---")
+
 
 def generate_sfx(args):
     print(f"--- Generating SFX with Stable Audio Open ---")
@@ -611,7 +637,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--steps", type=int, default=DEFAULT_STEPS)
     parser.add_argument("--guidance", type=float, default=DEFAULT_GUIDANCE)
-    parser.add_argument("--batch_size", type=int, default=1, help="Number of images to generate in parallel")
+    parser.add_argument("--num_procs", type=int, default=4, help="Number of separate processes to run")
     parser.add_argument("--compile", action="store_true", help="Enable torch.compile for extra speed (requires more VRAM)")
     args = parser.parse_args()
 
