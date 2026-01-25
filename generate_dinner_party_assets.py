@@ -416,6 +416,7 @@ Bali stories.
 """
 
 def generate_images(args):
+    os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
     model_id = args.model or DEFAULT_MODEL
     steps = args.steps or DEFAULT_STEPS
     guidance = args.guidance if args.guidance is not None else DEFAULT_GUIDANCE
@@ -423,26 +424,31 @@ def generate_images(args):
 
     print(f"--- Generating {len(SCENES)} Images with {model_id} (Batch Size: {batch_size}) ---")
     
+    quant_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+    )
+    
     pipe_kwargs = {
         "torch_dtype": torch.bfloat16 if DEVICE in ["cuda", "mps"] else torch.float32,
     }
 
     if DEVICE == "cuda":
-        quant_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16,
-        )
         pipe_kwargs["transformer_quantization_config"] = quant_config
+        pipe_kwargs["text_encoder_2_quantization_config"] = quant_config
 
     pipe = DiffusionPipeline.from_pretrained(model_id, **pipe_kwargs)
     
     if DEVICE == "cuda":
+        pipe.vae.enable_tiling()
+        pipe.vae.enable_slicing()
         pipe.to(DEVICE)
-        try:
-            pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead")
-        except Exception as e:
-            print(f"torch.compile skipped: {e}")
+        if getattr(args, "compile", False):
+            try:
+                pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead")
+            except Exception as e:
+                print(f"torch.compile skipped: {e}")
     elif DEVICE == "mps":
         pipe.to(DEVICE)
 
@@ -549,6 +555,7 @@ if __name__ == "__main__":
     parser.add_argument("--steps", type=int, default=DEFAULT_STEPS)
     parser.add_argument("--guidance", type=float, default=DEFAULT_GUIDANCE)
     parser.add_argument("--batch_size", type=int, default=1, help="Number of images to generate in parallel")
+    parser.add_argument("--compile", action="store_true", help="Enable torch.compile for extra speed (requires more VRAM)")
     args = parser.parse_args()
     generate_images(args)
     generate_sfx(args)
