@@ -424,23 +424,11 @@ def generate_images(args):
     guidance = args.guidance if args.guidance is not None else DEFAULT_GUIDANCE
     batch_size = args.batch_size
 
-    print(f"--- Generating {len(SCENES)} Images with {model_id} (Batch Size: {batch_size}) ---")
+    print(f"--- Generating {len(SCENES)} Images with {model_id} (FP16, Text Encoder on CPU) ---")
     
-    # 4-bit Quantization Config for both Transformer and T5
-    quant_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16,
-    )
-
     pipe_kwargs = {
-        "torch_dtype": torch.bfloat16 if DEVICE in ["cuda", "mps"] else torch.float32,
+        "torch_dtype": torch.float16 if DEVICE == "cuda" else torch.float32,
     }
-
-    if DEVICE == "cuda":
-        pipe_kwargs["transformer_quantization_config"] = quant_config
-        # Quantizing the T5 Text Encoder saves an extra ~6-8GB VRAM
-        pipe_kwargs["text_encoder_2_quantization_config"] = quant_config
 
     pipe = DiffusionPipeline.from_pretrained(
         model_id, 
@@ -448,15 +436,21 @@ def generate_images(args):
     )
     
     if DEVICE == "cuda":
-        # Enable VAE optimizations to handle 1280x720 peaks
+        # Enable VAE optimizations
         pipe.vae.enable_tiling()
         pipe.vae.enable_slicing()
         
-        # Re-enable CPU offloading for maximum stability
+        # Explicitly move text encoders to CPU to save VRAM
+        print("  Moving text encoders to CPU...")
+        pipe.text_encoder.to("cpu")
+        pipe.text_encoder_2.to("cpu")
+        
+        # Enable model CPU offload for the rest of the pipeline
         pipe.enable_model_cpu_offload()
         
         if getattr(args, "compile", False):
             try:
+                # Compile transformer on GPU
                 pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead")
             except Exception as e:
                 print(f"torch.compile skipped: {e}")

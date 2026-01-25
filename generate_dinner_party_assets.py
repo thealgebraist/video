@@ -422,27 +422,22 @@ def generate_images(args):
     guidance = args.guidance if args.guidance is not None else DEFAULT_GUIDANCE
     batch_size = args.batch_size
 
-    print(f"--- Generating {len(SCENES)} Images with {model_id} (Batch Size: {batch_size}) ---")
-    
-    quant_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16,
-    )
+    print(f"--- Generating {len(SCENES)} Images with {model_id} (FP16, Text Encoder on CPU) ---")
     
     pipe_kwargs = {
-        "torch_dtype": torch.bfloat16 if DEVICE in ["cuda", "mps"] else torch.float32,
+        "torch_dtype": torch.float16 if DEVICE == "cuda" else torch.float32,
     }
-
-    if DEVICE == "cuda":
-        pipe_kwargs["transformer_quantization_config"] = quant_config
-        pipe_kwargs["text_encoder_2_quantization_config"] = quant_config
 
     pipe = DiffusionPipeline.from_pretrained(model_id, **pipe_kwargs)
     
     if DEVICE == "cuda":
         pipe.vae.enable_tiling()
         pipe.vae.enable_slicing()
+        
+        # Move text encoders to CPU
+        pipe.text_encoder.to("cpu")
+        pipe.text_encoder_2.to("cpu")
+        
         pipe.enable_model_cpu_offload()
         if getattr(args, "compile", False):
             try:
