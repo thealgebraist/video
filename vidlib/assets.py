@@ -36,6 +36,12 @@ from generate_dinner_party_assets import (
     generate_voiceover as dinner_generate_voiceover,
     generate_music as dinner_generate_music,
 )
+from generate_toilet_assets import (
+    generate_images as toilet_generate_images,
+    generate_sfx as toilet_generate_sfx,
+    generate_voiceover as toilet_generate_voiceover,
+    generate_music as toilet_generate_music,
+)
 # from generate_horror_assets import generate_images as horror_generate_images, generate_sfx as horror_generate_sfx, generate_voiceover as horror_generate_voiceover, generate_music as horror_generate_music
 
 __all__ = [
@@ -64,5 +70,9 @@ __all__ = [
     "dinner_generate_sfx",
     "dinner_generate_voiceover",
     "dinner_generate_music",
+    "toilet_generate_images",
+    "toilet_generate_sfx",
+    "toilet_generate_voiceover",
+    "toilet_generate_music",
     # 'horror_generate_images', 'horror_generate_sfx', 'horror_generate_voiceover', 'horror_generate_music',
 ]
