@@ -7,20 +7,44 @@ Import ListNotations.
 Definition START_CODE_PREFIX := [0; 0; 1].
 
 Inductive start_code : Type :=
+  | PACK_HEADER_CODE     : start_code
+  | SYSTEM_HEADER_CODE   : start_code
+  | VIDEO_PES_CODE       : start_code
+  | AUDIO_PES_CODE       : start_code
   | SEQUENCE_HEADER_CODE : start_code
   | GOP_HEADER_CODE      : start_code
   | PICTURE_START_CODE   : start_code
-  | SLICE_START_CODE     : nat -> start_code
   | SEQUENCE_END_CODE    : start_code.
 
 Definition start_code_to_byte (sc : start_code) : nat :=
   match sc with
+  | PACK_HEADER_CODE     => 186 (* 0xBA *)
+  | SYSTEM_HEADER_CODE   => 187 (* 0xBB *)
+  | VIDEO_PES_CODE       => 224 (* 0xE0 *)
+  | AUDIO_PES_CODE       => 192 (* 0xC0 *)
   | SEQUENCE_HEADER_CODE => 179 (* 0xB3 *)
   | GOP_HEADER_CODE      => 184 (* 0xB8 *)
   | PICTURE_START_CODE   => 0   (* 0x00 *)
-  | SLICE_START_CODE n   => n   (* 0x01 through 0xAF *)
   | SEQUENCE_END_CODE    => 183 (* 0xB7 *)
   end.
+
+(* Formal PES Header Record *)
+Record pes_header := {
+  stream_id : nat;
+  pes_packet_length : nat;
+  pts : nat;
+}.
+
+Definition is_valid_pes (p : pes_header) : Prop :=
+  p.(stream_id) >= 192 /\ p.(stream_id) <= 239.
+
+Definition encode_gop_header : list nat :=
+  START_CODE_PREFIX ++ [start_code_to_byte GOP_HEADER_CODE] ++
+  [0; 8; 0; 0]. (* Standard 25fps time code *)
+
+Definition encode_pic_header (temp_ref : nat) : list nat :=
+  START_CODE_PREFIX ++ [start_code_to_byte PICTURE_START_CODE] ++
+  [(temp_ref / 4); ((temp_ref mod 4) * 64 + 8); 255; 248]. (* temporal ref and I-frame bits *)
 
 (* Minimal Sequence Header Specification *)
 Record sequence_header := {
