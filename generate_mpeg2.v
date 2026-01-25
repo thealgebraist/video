@@ -2,16 +2,13 @@ Require Import mpeg2_spec.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-Definition my_seq := {|
-  width := 1280;
-  height := 720;
-  aspect := 1;
-  rate := 3;
-  bitrate := 10000;
-  vbv := 20;
+Definition my_lpcm := {|
+  lpcm_substream_id := 160; (* 0xA0 *)
+  lpcm_frames := 1;
+  lpcm_ptr := 0;
+  lpcm_sample_rate := 2; (* 44.1k *)
+  lpcm_bits := 0;        (* 16b *)
+  lpcm_channels := 1;    (* stereo *)
 |}.
 
-Definition binary_seq_header := bits_to_bytes (encode_sequence_header my_seq).
-
-(* Extract exactly for the Python generator *)
-Compute binary_seq_header.
+Compute (encode_lpcm_header my_lpcm).

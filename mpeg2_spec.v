@@ -75,3 +75,19 @@ Proof.
   rewrite firstn_app.
   simpl. reflexivity.
 Qed.
+
+Record lpcm_header := {
+  lpcm_substream_id : nat;
+  lpcm_frames : nat;
+  lpcm_ptr : nat;
+  lpcm_sample_rate : nat; (* 0=48k, 1=96k, 2=44.1k, 3=32k *)
+  lpcm_bits : nat;        (* 0=16b, 1=20b, 2=24b *)
+  lpcm_channels : nat;    (* 0=mono, 1=stereo *)
+}.
+
+Definition encode_lpcm_header (l : lpcm_header) : list nat :=
+  [ l.(lpcm_substream_id);
+    l.(lpcm_frames);
+    (l.(lpcm_ptr) / 256); (l.(lpcm_ptr) mod 256);
+    (l.(lpcm_sample_rate) * 64 + l.(lpcm_bits) * 16 + l.(lpcm_channels))
+  ].
