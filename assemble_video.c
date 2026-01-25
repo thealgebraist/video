@@ -46,7 +46,7 @@ AudioBuffer load_audio(const char *filename) {
 
     SwrContext *swr = NULL;
     AVChannelLayout out_ch_layout = AV_CHANNEL_LAYOUT_STEREO;
-    swr_alloc_set_opts2(&swr, &out_ch_layout, AV_SAMPLE_FMT_FLT, SAMPLE_RATE, 
+    swr_alloc_set_opts2(&swr, &out_ch_layout, AV_SAMPLE_FMT_FLT, SAMPLE_RATE,
                         &dec_ctx->ch_layout, dec_ctx->sample_fmt, dec_ctx->sample_rate, 0, NULL);
     swr_init(swr);
 
@@ -93,37 +93,41 @@ int main(int argc, char **argv) {
     float *mixed_audio = calloc(total_samples * 2, sizeof(float));
 
     char path[1024];
+    // 1. Music (Underneath - lower volume)
     snprintf(path, sizeof(path), "%s/music/airport_theme.wav", assets_dir);
     AudioBuffer music = load_audio(path);
     if (music.data) {
         for (int i = 0; i < total_samples && i < music.nb_samples; i++) {
-            mixed_audio[i*2] += music.data[i*2] * 0.4f;
-            mixed_audio[i*2+1] += music.data[i*2+1] * 0.4f;
+            mixed_audio[i*2] += music.data[i*2] * 0.3f;
+            mixed_audio[i*2+1] += music.data[i*2+1] * 0.3f;
         }
         free(music.data);
     }
 
-    snprintf(path, sizeof(path), "%s/voice/voiceover_full.wav", assets_dir);
-    AudioBuffer vo = load_audio(path);
-    if (vo.data) {
-        for (int i = 0; i < total_samples && i < vo.nb_samples; i++) {
-            mixed_audio[i*2] += vo.data[i*2] * 1.8f;
-            mixed_audio[i*2+1] += vo.data[i*2+1] * 1.8f;
-        }
-        free(vo.data);
-    }
-
     float scene_dur = (float)TOTAL_DURATION / NUM_SCENES;
     for (int s = 0; s < NUM_SCENES; s++) {
+        int start_sample = (int)(s * scene_dur * SAMPLE_RATE);
+
+        // 2. SFX (Synchronized to scene)
         snprintf(path, sizeof(path), "%s/sfx/%s.wav", assets_dir, scenes[s]);
         AudioBuffer sfx = load_audio(path);
         if (sfx.data) {
-            int start_sample = (int)(s * scene_dur * SAMPLE_RATE);
             for (int i = 0; i < sfx.nb_samples && (start_sample + i) < total_samples; i++) {
                 mixed_audio[(start_sample+i)*2] += sfx.data[i*2] * 0.5f;
                 mixed_audio[(start_sample+i)*2+1] += sfx.data[i*2+1] * 0.5f;
             }
             free(sfx.data);
+        }
+
+        // 3. Voiceover (Synchronized to scene)
+        snprintf(path, sizeof(path), "%s/voice/vo_%03d.wav", assets_dir, s);
+        AudioBuffer vo = load_audio(path);
+        if (vo.data) {
+            for (int i = 0; i < vo.nb_samples && (start_sample + i) < total_samples; i++) {
+                mixed_audio[(start_sample+i)*2] += vo.data[i*2] * 2.0f;
+                mixed_audio[(start_sample+i)*2+1] += vo.data[i*2+1] * 2.0f;
+            }
+            free(vo.data);
         }
     }
 
@@ -140,7 +144,7 @@ int main(int argc, char **argv) {
     vctx->pix_fmt = AV_PIX_FMT_YUV420P;
     vctx->gop_size = 12;
     av_opt_set(vctx->priv_data, "preset", "slow", 0);
-    vctx->bit_rate = 5000000;
+    vctx->bit_rate = 8000000;
     if (oc->oformat->flags & AVFMT_GLOBALHEADER) vctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     avcodec_open2(vctx, vcodec, NULL);
     avcodec_parameters_from_context(vst->codecpar, vctx);
@@ -185,8 +189,9 @@ int main(int argc, char **argv) {
         }
 
         if (img_data) {
+            const uint8_t * const src_data[1] = { (const uint8_t *)img_data };
             const int in_linesize[1] = { 3 * WIDTH };
-            sws_scale(sws, (const uint8_t * const *)&img_data, in_linesize, 0, HEIGHT, vframe->data, vframe->linesize);
+            sws_scale(sws, src_data, in_linesize, 0, HEIGHT, vframe->data, vframe->linesize);
         } else {
             memset(vframe->data[0], 0, vframe->linesize[0] * HEIGHT);
             memset(vframe->data[1], 128, vframe->linesize[1] * HEIGHT/2);
