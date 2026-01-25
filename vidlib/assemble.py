@@ -6,6 +6,7 @@ from assemble_metro_trailer import assemble_metro
 from assemble_airport_trailer import assemble_airport
 from assemble_dinner_party_trailer import assemble_dinner
 from assemble_toilet_trailer import assemble_toilet
+from assemble_souffle_trailer import assemble_souffle
 
 __all__ = [
     'assemble_sloppy',
@@ -15,4 +16,5 @@ __all__ = [
     'assemble_airport',
     'assemble_dinner',
     'assemble_toilet',
+    'assemble_souffle',
 ]
