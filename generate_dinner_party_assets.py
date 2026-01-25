@@ -435,26 +435,25 @@ def generate_sfx(args):
     print(f"--- Generating High Quality SFX with Stable Audio Open ---")
     try:
         pipe = StableAudioPipeline.from_pretrained("stabilityai/stable-audio-open-1.0", torch_dtype=torch.float16 if DEVICE == "cuda" else torch.float32).to(DEVICE)
-            os.makedirs(f"{ASSETS_DIR}/sfx", exist_ok=True)
-            for s_id, _, sfx_prompt in SCENES:
-                out_path = f"{ASSETS_DIR}/sfx/{s_id}.wav"
+        os.makedirs(f"{ASSETS_DIR}/sfx", exist_ok=True)
+        for s_id, _, sfx_prompt in SCENES:
+            out_path = f"{ASSETS_DIR}/sfx/{s_id}.wav"
+            
+            # Check if exists and if it's high quality
+            if os.path.exists(out_path) and not utils.is_audio_bad(out_path):
+                continue
                 
-                # Check if exists and if it's high quality
-                if os.path.exists(out_path) and not utils.is_audio_bad(out_path):
-                    continue
-                    
-                print(f"Generating SFX for: {s_id}")
-                # Retry logic for quality
-                for attempt in range(2):
-                    audio = pipe(sfx_prompt, num_inference_steps=200, audio_end_in_s=10.0).audios[0]
-                    wavfile.write(out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16))
-                    
-                    if not utils.is_audio_bad(out_path):
-                        break
-                    print(f"  Attempt {attempt+1} produced bad audio, retrying...")
-                    
-            del pipe
-        
+            print(f"Generating SFX for: {s_id}")
+            # Retry logic for quality
+            for attempt in range(2):
+                audio = pipe(sfx_prompt, num_inference_steps=200, audio_end_in_s=10.0).audios[0]
+                wavfile.write(out_path, 44100, (audio.T.cpu().numpy() * 32767).astype(np.int16))
+                
+                if not utils.is_audio_bad(out_path):
+                    break
+                print(f"  Attempt {attempt+1} produced bad audio, retrying...")
+                
+        del pipe
     except Exception as e: print(f"SFX generation failed: {e}")
     gc.collect()
 
