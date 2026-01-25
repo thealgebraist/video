@@ -418,30 +418,53 @@ def generate_images(args):
     model_id = args.model or DEFAULT_MODEL
     steps = args.steps or DEFAULT_STEPS
     guidance = args.guidance if args.guidance is not None else DEFAULT_GUIDANCE
+    batch_size = args.batch_size
 
-    print(f"--- Generating {len(SCENES)} Images with {model_id} ---")
+    print(f"--- Generating {len(SCENES)} Images with {model_id} (Batch Size: {batch_size}) ---")
     
     pipe = DiffusionPipeline.from_pretrained(
         model_id, 
         torch_dtype=torch.bfloat16 if DEVICE in ["cuda", "mps"] else torch.float32
     )
     
-    if DEVICE == "cuda" or DEVICE == "mps":
-        pipe.enable_model_cpu_offload()
+    if DEVICE == "cuda":
+        pipe.to(DEVICE)
+        # Optimization for high-end GPUs
+        try:
+            pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead", fullgraph=True)
+        except Exception as e:
+            print(f"torch.compile skipped: {e}")
+    elif DEVICE == "mps":
+        pipe.to(DEVICE)
 
     os.makedirs(f"{ASSETS_DIR}/images", exist_ok=True)
+    
+    # Filter for scenes that need generation
+    to_generate = []
     for s_id, prompt, _ in SCENES:
         out_path = f"{ASSETS_DIR}/images/{s_id}.png"
         if not os.path.exists(out_path):
-            print(f"Generating: {s_id}")
-            image = pipe(
-                prompt=prompt,
-                num_inference_steps=steps,
-                guidance_scale=guidance,
-                width=1280,
-                height=720,
-            ).images[0]
-            image.save(out_path)
+            to_generate.append((s_id, prompt))
+            
+    # Process in batches
+    for i in range(0, len(to_generate), batch_size):
+        batch = to_generate[i : i + batch_size]
+        batch_prompts = [item[1] for item in batch]
+        batch_ids = [item[0] for item in batch]
+        
+        print(f"Generating batch {i//batch_size + 1}: {', '.join(batch_ids)}")
+        
+        results = pipe(
+            prompt=batch_prompts,
+            num_inference_steps=steps,
+            guidance_scale=guidance,
+            width=1280,
+            height=720,
+        ).images
+        
+        for idx, image in enumerate(results):
+            image.save(f"{ASSETS_DIR}/images/{batch_ids[idx]}.png")
+            
     del pipe
     gc.collect()
 
@@ -568,6 +591,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--steps", type=int, default=DEFAULT_STEPS)
     parser.add_argument("--guidance", type=float, default=DEFAULT_GUIDANCE)
+    parser.add_argument("--batch_size", type=int, default=1, help="Number of images to generate in parallel")
     args = parser.parse_args()
 
     generate_images(args)
